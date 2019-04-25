@@ -1,0 +1,6 @@
+{
+	"machine_name": "<alice|bob>",
+	"exclude": [
+		"[container_name]"
+	]
+}
