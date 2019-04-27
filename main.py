@@ -66,6 +66,7 @@ def main():
 	# TODO put in func
 	# Add running containers as node, with different colors depending of management by Docker Compose
 	g = graphviz.Digraph(comment = 'Machine physique : {0}'.format(config['machine_name']), format = 'png')
+	g.attr(label = 'Machine physique : {0}'.format(config['machine_name']))
 	with g.subgraph(name = 'cluster_0') as vm:
 		vm.attr(label = 'Machine virtuelle : {0}'.format(socket.gethostname()))
 		# Create subgraph containing all running container managed by Docker Compose
