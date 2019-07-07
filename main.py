@@ -7,6 +7,7 @@ import json
 import socket
 import os
 from ruamel.yaml import YAML
+from collections import defaultdict
 
 class GraphBot:
 	'''
@@ -30,13 +31,25 @@ class GraphBot:
 		running = self.__get_containers()
 		g = graphviz.Digraph(comment = 'Machine physique : {0}'.format(self.config['machine_name']), format = 'png')
 		g.attr(label = 'Machine physique : {0}'.format(self.config['machine_name']))
+
+		# Create a subgraph for the virtual machine
 		with g.subgraph(name = 'cluster_0') as vm:
 			vm.attr(label = 'Machine virtuelle : {0}'.format(socket.gethostname()))
 			vm.attr(color = 'lightgrey')
 			vm.node_attr.update(style = 'filled', color = 'orange')
-			# Add all running containers as a node
+
+			# Discover networks and containers belonging to them
+			network_dict = defaultdict(list)
 			for c in running:
-				vm.node(c.name)
+				for n in c.attrs['NetworkSettings']['Networks']:
+					network_dict[n].append(c)
+
+			# Add all running containers as a node in their own network subgraph
+			for k, v in network_dict.items():
+				with vm.subgraph(name = 'cluster_{0}'.format(k)) as cluster:
+					cluster.attr(label = 'Réseau : {0}'.format(k))
+					for c in v:
+						cluster.node(c.name)
 
 			for c in running:
 				# Add reverse-proxy links
