@@ -49,7 +49,9 @@ class GraphBot:
 				with vm.subgraph(name = 'cluster_{0}'.format(k)) as cluster:
 					cluster.attr(label = 'Réseau : {0}'.format(k))
 					for c in v:
-						cluster.node(c.name)
+						with cluster.subgraph(name = 'cluster_{0}'.format(c.name)) as container:
+							cluster.attr(label = 'Image : {0}'.format(c.image.tags[0]))
+							container.node(c.name)
 
 			for c in running:
 				# Add reverse-proxy links
