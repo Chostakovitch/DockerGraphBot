@@ -56,7 +56,15 @@ class GraphBot:
 				if self.has_traefik:
 					frontend = c.labels.get('traefik.frontend.rule')
 					if frontend is not None:
-						vm.edge(self.traefik_container, c.name, label = frontend.split('Host:')[1])
+						vm.edge(self.traefik_container, c.name, label = frontend.split('Host:')[1], style = "dashed")
+
+				# Add links
+				links = set()
+				for _, v in c.attrs['NetworkSettings']['Networks'].items():
+					if v['Links'] is not None:
+						links.update([l.split(':')[0] for l in v['Links']]);
+				for l in links:
+					vm.edge(c.name, l)
 
 		# Create PNG
 		g.render(os.path.join(self.OUTPUT_DIR, '{0}.gv'.format(socket.gethostname())))
