@@ -68,6 +68,11 @@ class GraphBot:
 				for l in links:
 					vm.edge(c.name, l)
 
+				# Add port mapping
+				for _, mapping in c.attrs['NetworkSettings']['Ports'].items():
+					if mapping is not None:
+						vm.edges([(p['HostPort'], c.name) for p in mapping])
+
 		# Create PNG
 		g.render(os.path.join(self.OUTPUT_DIR, '{0}.gv'.format(socket.gethostname())))
 
