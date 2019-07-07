@@ -24,6 +24,7 @@ class GraphBot:
 			self.config = json.load(fd)
 		self.OUTPUT_DIR = os.path.join(config_path, 'output')
 		self.docker_client = docker.from_env()
+		self.has_traefik = False
 
 	def build_graph(self):
 		running = self.__get_containers()
@@ -33,8 +34,16 @@ class GraphBot:
 			vm.attr(label = 'Machine virtuelle : {0}'.format(socket.gethostname()))
 			vm.attr(color = 'lightgrey')
 			vm.node_attr.update(style = 'filled', color = 'orange')
+			# Add all running containers as a node
 			for c in running:
 				vm.node(c.name)
+
+			for c in running:
+				# Add reverse-proxy links
+				if self.has_traefik:
+					frontend = c.labels.get('traefik.frontend.rule')
+					if frontend is not None:
+						vm.edge(self.traefik_container, c.name, label = frontend.split('Host:')[1])
 
 		# Create PNG
 		g.render(os.path.join(self.OUTPUT_DIR, '{0}.gv'.format(socket.gethostname())))
@@ -56,6 +65,10 @@ class GraphBot:
 		for container in self.docker_client.containers.list():
 			if container.status == 'running' and container.name not in self.config['exclude']:
 				running_containers.append(container)
+			for i in container.image.tags:
+				if 'traefik' in i.split(':')[0]:
+					self.has_traefik = True
+					self.traefik_container = container.name
 
 		return running_containers
 
