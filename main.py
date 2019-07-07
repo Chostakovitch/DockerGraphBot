@@ -9,6 +9,19 @@ import os
 from ruamel.yaml import YAML
 from collections import defaultdict
 
+class ShortContainer:
+	'''
+	This class represents a Docker container with only useful members
+	for GraphBot.
+	'''
+
+	def __init__(self, name):
+		self.name = name;
+		self.image = str()
+		self.ports = dict()
+		self.labels = dict()
+		self.networks = list()
+
 class GraphBot:
 	'''
 	This class asks the Docker daemon informations about running Containers
