@@ -18,9 +18,10 @@ class ShortContainer:
 	def __init__(self, name):
 		self.name = name;
 		self.image = str()
-		self.ports = dict()
-		self.labels = dict()
-		self.networks = list()
+		self.ports = defaultdict(set)
+		self.url = str()
+		self.networks = set()
+		self.links = set()
 
 class GraphBot:
 	'''
@@ -36,25 +37,23 @@ class GraphBot:
 		# Get configuration
 		with open(os.path.join(config_path, 'config.json'), 'r') as fd:
 			self.config = json.load(fd)
-		self.OUTPUT_DIR = os.path.join(config_path, 'output')
+		self.output_dir = os.path.join(config_path, 'output')
 		self.docker_client = docker.from_env()
 		self.has_traefik = False
 
 	def build_graph(self):
 		running = self.__get_containers()
-		g = graphviz.Digraph(comment = 'Machine physique : {0}'.format(self.config['machine_name']), format = 'png')
+		g = graphviz.Digraph(comment = 'Machine physique : {0}'.format(self.config['machine_name']), format = 'png', node_attr={'shape': 'record'})
 		g.attr(label = 'Machine physique : {0}'.format(self.config['machine_name']))
 
 		# Create a subgraph for the virtual machine
 		with g.subgraph(name = 'cluster_0') as vm:
 			vm.attr(label = 'Machine virtuelle : {0}'.format(socket.gethostname()))
-			vm.attr(color = 'lightgrey')
-			vm.node_attr.update(style = 'filled', color = 'orange')
 
-			# Discover networks and containers belonging to them
+			# Group containers by networks
 			network_dict = defaultdict(list)
 			for c in running:
-				for n in c.attrs['NetworkSettings']['Networks']:
+				for n in c.networks:
 					network_dict[n].append(c)
 
 			# Add all running containers as a node in their own network subgraph
@@ -63,53 +62,58 @@ class GraphBot:
 					cluster.attr(label = 'Réseau : {0}'.format(k))
 					for c in v:
 						with cluster.subgraph(name = 'cluster_{0}'.format(c.name)) as container:
-							cluster.attr(label = 'Image : {0}'.format(c.image.tags[0]))
-							container.node(c.name)
+							container.attr(label = 'Image : {0}'.format(c.image))
+							label = '{' + c.name + '}|{'
+							for p in c.ports:
+								label += '<{0}> {0}|'.format(p)
+							label = label[:-1] + '}'
+							container.node(c.name, label)
 
 			for c in running:
 				# Add reverse-proxy links
 				if self.has_traefik:
-					frontend = c.labels.get('traefik.frontend.rule')
-					if frontend is not None:
-						vm.edge(self.traefik_container, c.name, label = frontend.split('Host:')[1], style = "dashed")
+					vm.edge(self.traefik_container, c.name, label = c.url, style = "dashed")
 
 				# Add links
-				links = set()
-				for _, v in c.attrs['NetworkSettings']['Networks'].items():
-					if v['Links'] is not None:
-						links.update([l.split(':')[0] for l in v['Links']]);
-				for l in links:
-					vm.edge(c.name, l)
+				vm.edges([(c.name, l) for l in c.links])
 
 				# Add port mapping
-				for _, mapping in c.attrs['NetworkSettings']['Ports'].items():
-					if mapping is not None:
-						vm.edges([(p['HostPort'], c.name) for p in mapping])
+				for expose, host_ports in c.ports.items():
+					vm.edges([(host, '{0}:{1}'.format(c.name, expose)) for host in host_ports])
 
 		# Create PNG
-		g.render(os.path.join(self.OUTPUT_DIR, '{0}.gv'.format(socket.gethostname())))
+		g.render(os.path.join(self.output_dir, '{0}.gv'.format(socket.gethostname())))
 
 	def __get_containers(self):
 		'''
 		Get running docker containers on the host described by docker_client, without those excluded in configuration
 
-		:param docker_client: docker client for target host
-		:type docker_client: DockerClient
 		:rtype List
-		:returns List of Containers (running containers)
+		:returns List of ShortContainer representing running containers
 		'''
 
 		# Names of all running containers
 		running_containers = []
 
 		# Get all running containers
-		for container in self.docker_client.containers.list():
-			if container.status == 'running' and container.name not in self.config['exclude']:
-				running_containers.append(container)
-			for i in container.image.tags:
+		for c in self.docker_client.containers.list():
+			if c.status == 'running' and c.name not in self.config['exclude']:
+				s = ShortContainer(c.name)
+				s.image = c.image.tags[0]
+				networks_conf = c.attrs['NetworkSettings']
+				for expose, host in networks_conf['Ports'].items():
+					s.ports[expose].update([p['HostPort'] for p in host] if host is not None else [])
+				s.url = c.labels.get('traefik.frontend.rule')
+				for n, v in networks_conf['Networks'].items():
+					s.networks.add(n)
+					if v['Links'] is not None:
+						s.links.update([l.split(':')[0] for l in v['Links']])
+				running_containers.append(s)
+
+			for i in c.image.tags:
 				if 'traefik' in i.split(':')[0]:
 					self.has_traefik = True
-					self.traefik_container = container.name
+					self.traefik_container = c.name
 
 		return running_containers
 
