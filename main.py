@@ -23,6 +23,16 @@ class ShortContainer:
 		self.networks = set()
 		self.links = set()
 
+	@property
+	def url(self):
+		return self.__name;
+
+	@url.setter
+	def url(self, value):
+		if value is not None:
+			value = value.replace('Host:', '')
+		self.__name = value
+
 class GraphBot:
 	'''
 	This class asks the Docker daemon informations about running Containers
@@ -43,7 +53,7 @@ class GraphBot:
 
 	def build_graph(self):
 		running = self.__get_containers()
-		g = graphviz.Digraph(comment = 'Machine physique : {0}'.format(self.config['machine_name']), format = 'png', node_attr={'shape': 'record'})
+		g = graphviz.Digraph(comment = 'Machine physique : {0}'.format(self.config['machine_name']), format = 'png')
 		g.attr(label = 'Machine physique : {0}'.format(self.config['machine_name']))
 
 		# Create a subgraph for the virtual machine
@@ -61,18 +71,18 @@ class GraphBot:
 				with vm.subgraph(name = 'cluster_{0}'.format(k)) as cluster:
 					cluster.attr(label = 'Réseau : {0}'.format(k))
 					for c in v:
-						with cluster.subgraph(name = 'cluster_{0}'.format(c.name)) as container:
-							container.attr(label = 'Image : {0}'.format(c.image))
+						with cluster.subgraph(name = 'cluster_{0}'.format(c.image)) as image:
+							image.attr(label = 'Image : {0}'.format(c.image), style = "filled,rounded")
 							label = '{' + c.name + '}|{'
 							for p in c.ports:
 								label += '<{0}> {0}|'.format(p)
 							label = label[:-1] + '}'
-							container.node(c.name, label)
+							image.node(c.name, label, shape = "record", style = "filled,rounded", fillcolor = "white")
 
 			for c in running:
 				# Add reverse-proxy links
 				if self.has_traefik:
-					vm.edge(self.traefik_container, c.name, label = c.url, style = "dashed")
+					vm.edge(self.traefik_container, c.name, label = c.url, style = "dotted")
 
 				# Add links
 				vm.edges([(c.name, l) for l in c.links])
@@ -81,7 +91,7 @@ class GraphBot:
 				for expose, host_ports in c.ports.items():
 					vm.edges([(host, '{0}:{1}'.format(c.name, expose)) for host in host_ports])
 
-		# Create PNG
+		# Render PNG
 		g.render(os.path.join(self.output_dir, '{0}.gv'.format(socket.gethostname())))
 
 	def __get_containers(self):
