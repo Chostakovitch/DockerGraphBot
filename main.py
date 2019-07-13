@@ -9,6 +9,8 @@ import os
 from ruamel.yaml import YAML
 from collections import defaultdict
 
+TRAEFIK_DEFAULT_PORT = '80/tcp'
+
 class ShortContainer:
 	'''
 	This class represents a Docker container with only useful members
@@ -19,19 +21,31 @@ class ShortContainer:
 		self.name = name;
 		self.image = str()
 		self.ports = defaultdict(set)
-		self.url = str()
 		self.networks = set()
 		self.links = set()
+		self.backend_port = TRAEFIK_DEFAULT_PORT
+
+		self.__url = str()
+
+	@property
+	def backend_port(self):
+		return self.__backend_port;
+
+	@backend_port.setter
+	def backend_port(self, value):
+		if value is not None and '/' not in value:
+			value = value + '/tcp'
+		self.__backend_port = value
 
 	@property
 	def url(self):
-		return self.__name;
+		return self.__url;
 
 	@url.setter
 	def url(self, value):
 		if value is not None:
 			value = value.replace('Host:', '')
-		self.__name = value
+		self.__url = value
 
 class GraphBot:
 	'''
@@ -73,7 +87,7 @@ class GraphBot:
 					for c in v:
 						with cluster.subgraph(name = 'cluster_{0}'.format(c.image)) as image:
 							image.attr(label = 'Image : {0}'.format(c.image), style = "filled,rounded")
-							label = '{' + c.name + '}|{'
+							label = '{' + '<{0}> {0}'.format(c.name) + '}|{'
 							for p in c.ports:
 								label += '<{0}> {0}|'.format(p)
 							label = label[:-1] + '}'
@@ -82,10 +96,10 @@ class GraphBot:
 			for c in running:
 				# Add reverse-proxy links
 				if self.has_traefik:
-					vm.edge(self.traefik_container, c.name, label = c.url, style = "dotted")
+					vm.edge('{0}:{1}'.format(self.traefik_container, TRAEFIK_DEFAULT_PORT), '{0}:{1}'.format(c.name, c.backend_port), label = ' {0}'.format(c.url), style = "dotted")
 
-				# Add links
-				vm.edges([(c.name, l) for l in c.links])
+				# Add links between containers
+				vm.edges([('{0}:{1}'.format(c.name, c.name), '{0}:{1}'.format(l, l)) for l in c.links])
 
 				# Add port mapping
 				for expose, host_ports in c.ports.items():
@@ -114,6 +128,9 @@ class GraphBot:
 				for expose, host in networks_conf['Ports'].items():
 					s.ports[expose].update([p['HostPort'] for p in host] if host is not None else [])
 				s.url = c.labels.get('traefik.frontend.rule')
+				backend_port = c.labels.get('traefik.port')
+				if backend_port is not None:
+					s.backend_port = backend_port
 				for n, v in networks_conf['Networks'].items():
 					s.networks.add(n)
 					if v['Links'] is not None:
