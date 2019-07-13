@@ -95,7 +95,7 @@ class GraphBot:
 
 			for c in running:
 				# Add reverse-proxy links
-				if self.has_traefik:
+				if self.has_traefik and c.url is not None:
 					vm.edge('{0}:{1}'.format(self.traefik_container, TRAEFIK_DEFAULT_PORT), '{0}:{1}'.format(c.name, c.backend_port), label = ' {0}'.format(c.url), style = "dotted")
 
 				# Add links between containers
