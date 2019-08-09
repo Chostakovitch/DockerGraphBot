@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# coding=utf-8
+#coding=utf-8
 
 import docker
 import graphviz
@@ -72,7 +72,7 @@ class GraphBot:
 
 		# Create a subgraph for the virtual machine
 		with g.subgraph(name = 'cluster_0') as vm:
-			vm.attr(label = 'Machine virtuelle : {0}'.format(socket.gethostname()))
+			vm.attr(label = 'Machine virtuelle : {0}'.format(self.config['vm_name']))
 
 			# Group containers by networks
 			network_dict = defaultdict(list)
@@ -86,7 +86,7 @@ class GraphBot:
 					cluster.attr(label = 'Réseau : {0}'.format(k))
 					for c in v:
 						with cluster.subgraph(name = 'cluster_{0}'.format(c.image)) as image:
-							image.attr(label = 'Image : {0}'.format(c.image), style = "filled,rounded")
+							image.attr(label = c.image, style = "filled,rounded")
 							label = '{' + '<{0}> {0}'.format(c.name) + '}|{'
 							for p in c.ports:
 								label += '<{0}> {0}|'.format(p)
@@ -106,7 +106,7 @@ class GraphBot:
 					vm.edges([(host, '{0}:{1}'.format(c.name, expose)) for host in host_ports])
 
 		# Render PNG
-		g.render(os.path.join(self.output_dir, '{0}.gv'.format(socket.gethostname())))
+		g.render(os.path.join(self.output_dir, '{0}.gv'.format(self.config['vm_name'])))
 
 	def __get_containers(self):
 		'''

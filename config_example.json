@@ -1,5 +1,6 @@
 {
 	"machine_name": "<alice|bob>",
+	"vm_name": "<pica01|pica02|monitoring>"
 	"exclude": [
 		"[container_name]"
 	]
