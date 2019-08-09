@@ -1,7 +1,12 @@
 {
-	"machine_name": "<alice|bob>",
 	"vm_name": "<pica01|pica02|monitoring>"
 	"exclude": [
 		"[container_name]"
-	]
+	],
+	"style":
+	{
+		"traefik_color": "blue",
+		"port_color": "red",
+		"link_color": "green"
+	}
 }

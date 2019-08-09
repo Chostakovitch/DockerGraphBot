@@ -67,8 +67,10 @@ class GraphBot:
 
 	def build_graph(self):
 		running = self.__get_containers()
-		g = graphviz.Digraph(comment = 'Machine physique : {0}'.format(self.config['machine_name']), format = 'png')
-		g.attr(label = 'Machine physique : {0}'.format(self.config['machine_name']))
+		graph_attr = {'splines': 'false', 'concentrate': 'true', 'ranksep': '0.8 equally'}
+		node_attr = {'style': 'filled,rounded', 'shape': 'record'}
+		edge_attr = {}
+		g = graphviz.Digraph(comment = 'Machine virtuelle : {0}'.format(self.config['vm_name']), format = 'png', graph_attr = graph_attr, node_attr = node_attr, edge_attr = edge_attr)
 
 		# Create a subgraph for the virtual machine
 		with g.subgraph(name = 'cluster_0') as vm:
@@ -87,23 +89,31 @@ class GraphBot:
 					for c in v:
 						with cluster.subgraph(name = 'cluster_{0}'.format(c.image)) as image:
 							image.attr(label = c.image, style = "filled,rounded")
-							label = '{' + '<{0}> {0}'.format(c.name) + '}|{'
-							for p in c.ports:
-								label += '<{0}> {0}|'.format(p)
-							label = label[:-1] + '}'
-							image.node(c.name, label, shape = "record", style = "filled,rounded", fillcolor = "white")
+							label = '{' + '<{0}> {0}'.format(c.name) + '}'
+							if c.ports:
+								label = '{' + '<{0}> {0}'.format(c.name) + '}|{'
+								for p in c.ports:
+									label += '<{0}> {0}|'.format(p)
+								label = label[:-1] + '}'
+							image.node(c.name, label, fillcolor = "white")
+						# Instead of using a link label (takes a lot of space), put a node without shape for the container's url
+						if self.has_traefik and c.url is not None:
+							cluster.node(c.url, c.url, color = "powderblue")
 
 			for c in running:
 				# Add reverse-proxy links
 				if self.has_traefik and c.url is not None:
-					vm.edge('{0}:{1}'.format(self.traefik_container, TRAEFIK_DEFAULT_PORT), '{0}:{1}'.format(c.name, c.backend_port), label = ' {0}'.format(c.url), style = "dotted")
+					vm.edge('{0}:{1}'.format(self.traefik_container, TRAEFIK_DEFAULT_PORT), c.url, arrowhead = "none", color = self.config['style']['traefik_color'])
+					vm.edge(c.url, '{0}:{1}'.format(c.name, c.backend_port), color = self.config['style']['traefik_color'])
 
 				# Add links between containers
-				vm.edges([('{0}:{1}'.format(c.name, c.name), '{0}:{1}'.format(l, l)) for l in c.links])
+				for l in c.links:
+					vm.edge('{0}:{1}'.format(c.name, c.name), '{0}:{1}'.format(l, l), color = self.config['style']['link_color'])
 
 				# Add port mapping
 				for expose, host_ports in c.ports.items():
-					vm.edges([(host, '{0}:{1}'.format(c.name, expose)) for host in host_ports])
+					for host in host_ports:
+						vm.edge(host, '{0}:{1}'.format(c.name, expose), color = self.config['style']['port_color'])
 
 		# Render PNG
 		g.render(os.path.join(self.output_dir, '{0}.gv'.format(self.config['vm_name'])))
