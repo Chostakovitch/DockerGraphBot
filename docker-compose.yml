@@ -1,0 +1,9 @@
+version: "3.7"
+services:
+  graph-bot:
+    image: "graph-bot"
+    container_name: "graph-bot"
+    volumes:
+      - "./config.json:/usr/src/app/config.json"
+      - "./output:/usr/src/app/output"
+      - "/var/run/docker.sock:/var/run/docker.sock"
