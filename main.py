@@ -23,8 +23,8 @@ class ShortContainer:
 		self.ports = defaultdict(set)
 		self.networks = set()
 		self.links = set()
-		self.backend_port = TRAEFIK_DEFAULT_PORT
 
+		self.__backend_port = TRAEFIK_DEFAULT_PORT
 		self.__url = str()
 
 	@property
@@ -50,7 +50,7 @@ class ShortContainer:
 class GraphBot:
 	'''
 	This class asks the Docker daemon informations about running Containers
-	and constructs a graph showing dependencies between containers.
+	and constructs a graph showing dependencies between containers, images and ports.
 
 	We also use Traefik labels to show links between the reverse proxy and the containers.
 	'''
@@ -67,14 +67,14 @@ class GraphBot:
 
 	def build_graph(self):
 		running = self.__get_containers()
-		graph_attr = {'splines': 'false', 'concentrate': 'true', 'ranksep': '0.8 equally'}
+		graph_attr = {'splines': 'false', 'concentrate': 'true', 'ranksep': '0.8 equally', 'fontcolor': self.config['color_scheme']['dark_text']}
 		node_attr = {'style': 'filled,rounded', 'shape': 'record'}
 		edge_attr = {}
 		g = graphviz.Digraph(comment = 'Machine virtuelle : {0}'.format(self.config['vm_name']), format = 'png', graph_attr = graph_attr, node_attr = node_attr, edge_attr = edge_attr)
 
 		# Create a subgraph for the virtual machine
 		with g.subgraph(name = 'cluster_0') as vm:
-			vm.attr(label = 'Machine virtuelle : {0}'.format(self.config['vm_name']))
+			vm.attr(label = 'Machine virtuelle : {0}'.format(self.config['vm_name']), style = 'filled,rounded', fillcolor = self.config['color_scheme']['vm'])
 
 			# Group containers by networks
 			network_dict = defaultdict(list)
@@ -84,36 +84,37 @@ class GraphBot:
 
 			# Add all running containers as a node in their own network subgraph
 			for k, v in network_dict.items():
-				with vm.subgraph(name = 'cluster_{0}'.format(k)) as cluster:
-					cluster.attr(label = 'Réseau : {0}'.format(k))
+				with vm.subgraph(name = 'cluster_{0}'.format(k)) as network:
+					network.attr(label = 'Réseau : {0}'.format(k), style = 'filled,rounded', color = self.config['color_scheme']['network'], fillcolor = self.config['color_scheme']['network'])
 					for c in v:
-						with cluster.subgraph(name = 'cluster_{0}'.format(c.image)) as image:
-							image.attr(label = c.image, style = "filled,rounded")
+						with network.subgraph(name = 'cluster_{0}'.format(c.image)) as image:
+							image.attr(label = c.image, style = 'filled,rounded', color = self.config['color_scheme']['image'], fillcolor = self.config['color_scheme']['image'])
 							label = '{' + '<{0}> {0}'.format(c.name) + '}'
 							if c.ports:
 								label = '{' + '<{0}> {0}'.format(c.name) + '}|{'
 								for p in c.ports:
 									label += '<{0}> {0}|'.format(p)
 								label = label[:-1] + '}'
-							image.node(c.name, label, fillcolor = "white")
+							image.node(c.name, label, color = self.config['color_scheme']['dark_text'], fillcolor = self.config['color_scheme']['container'], fontcolor = self.config['color_scheme']['dark_text'])
 						# Instead of using a link label (takes a lot of space), put a node without shape for the container's url
 						if self.has_traefik and c.url is not None:
-							cluster.node(c.url, c.url, color = "powderblue")
+							network.node(c.url, c.url, color = self.config['color_scheme']['traefik'], fillcolor = self.config['color_scheme']['traefik'], fontcolor = self.config['color_scheme']['bright_text'])
 
 			for c in running:
 				# Add reverse-proxy links
 				if self.has_traefik and c.url is not None:
-					vm.edge('{0}:{1}'.format(self.traefik_container, TRAEFIK_DEFAULT_PORT), c.url, arrowhead = "none", color = self.config['style']['traefik_color'])
-					vm.edge(c.url, '{0}:{1}'.format(c.name, c.backend_port), color = self.config['style']['traefik_color'])
+					vm.edge('{0}:{1}'.format(self.traefik_container, TRAEFIK_DEFAULT_PORT), c.url, arrowhead = "none", color = self.config['color_scheme']['traefik'])
+					vm.edge(c.url, '{0}:{1}'.format(c.name, c.backend_port), color = self.config['color_scheme']['traefik'])
 
 				# Add links between containers
 				for l in c.links:
-					vm.edge('{0}:{1}'.format(c.name, c.name), '{0}:{1}'.format(l, l), color = self.config['style']['link_color'])
+					vm.edge('{0}:{1}'.format(c.name, c.name), '{0}:{1}'.format(l, l), color = self.config['color_scheme']['link'])
 
 				# Add port mapping
 				for expose, host_ports in c.ports.items():
 					for host in host_ports:
-						vm.edge(host, '{0}:{1}'.format(c.name, expose), color = self.config['style']['port_color'])
+						vm.node(host, host, shape = 'diamond', fillcolor = self.config['color_scheme']['port'], fontcolor = self.config['color_scheme']['bright_text'])
+						vm.edge(host, '{0}:{1}'.format(c.name, expose), color = self.config['color_scheme']['port'])
 
 		# Render PNG
 		g.render(os.path.join(self.output_dir, '{0}.gv'.format(self.config['vm_name'])))
