@@ -53,3 +53,6 @@ Il est donc important de le laisser dans un réseau Docker isolé, sans connexio
 * Mettre en place la CI
 * Refacto le code, en particulier sur la partie coloration, agencement
 * Régler les problèmes de permission sur le dossier de sortie du conteneur.
+* Ajouter des liens invisibles entre clusters pour forcer l'agencement de haut en bas
+* Mettre en place une archi maître-esclave ou interroger le socket Docker exposé via TCP pour centraliser les infos
+* Produire un seul gros graphe avec les infos DNS
