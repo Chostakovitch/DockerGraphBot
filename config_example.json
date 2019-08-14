@@ -1,8 +1,25 @@
 {
-	"vm_name": "<pica01|pica02|monitoring>"
-	"exclude": [
-		"[container_name]"
-	],
+	"hosts": [
+		{
+			"vm": "<pica01|pica02|monitoring>",
+			"host": "<vm>.picasoft.net",
+			"exclude": [
+				"[container_name]"
+			],
+			"tls_config":
+			{
+				"ca_cert": "/DATA/ca.pem",
+				"cert": "/DATA/cert.pem",
+				"key": "/DATA/key.pem",
+			}
+		},
+		{
+			"vm": "<pica01|pica02|monitoring>",
+			"host": "localhost"
+		}
+	]
+},
+{
 	"color_scheme":
 	{
 		"traefik": "#edb591",
