@@ -56,3 +56,4 @@ Il est donc important de le laisser dans un réseau Docker isolé, sans connexio
 * Ajouter des liens invisibles entre clusters pour forcer l'agencement de haut en bas
 * Mettre en place une archi maître-esclave ou interroger le socket Docker exposé via TCP pour centraliser les infos
 * Produire un seul gros graphe avec les infos DNS
+* Ajouter la légende
