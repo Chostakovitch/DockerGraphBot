@@ -2,7 +2,7 @@
 	"hosts": [
 		{
 			"vm": "<pica01|pica02|monitoring>",
-			"host": "<vm>.picasoft.net",
+			"host_url": "<vm>.picasoft.net:2376",
 			"exclude": [
 				"[container_name]"
 			],
@@ -10,16 +10,14 @@
 			{
 				"ca_cert": "/DATA/ca.pem",
 				"cert": "/DATA/cert.pem",
-				"key": "/DATA/key.pem",
+				"key": "/DATA/key.pem"
 			}
 		},
 		{
 			"vm": "<pica01|pica02|monitoring>",
 			"host": "localhost"
 		}
-	]
-},
-{
+	],
 	"color_scheme":
 	{
 		"traefik": "#edb591",

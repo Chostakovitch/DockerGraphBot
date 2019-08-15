@@ -1,6 +1,6 @@
 FROM python:3
 
-WORKDIR /usr/src/app
+LABEL maintainer="quentinduchemin@tuta.io"
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
@@ -8,10 +8,16 @@ RUN apt-get update && \
     apt-get install -y graphviz && \
     rm -rf /var/cache/apt/archives
 
-COPY main.py ./
+COPY ./code/ /code
 
 RUN groupadd -r graph-bot && \
-    useradd -r -g graph-bot graph-bot
+    useradd -r -g graph-bot graph-bot && \
+    mkdir -p /config && \
+    chown -R graph-bot:graph-bot /code && \
+    chmod +x /code/entrypoint.sh
+
+WORKDIR /code
+
 USER graph-bot
 
-CMD [ "python", "./main.py" ]
+ENTRYPOINT [ "/code/entrypoint.sh" ]
