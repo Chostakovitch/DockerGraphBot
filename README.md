@@ -50,23 +50,20 @@ cd graph-bot
 docker build -t graph-bot .
 # On peut utiliser autre chose que config, mais il faut modifier docker-compose.yml
 mkdir config
+# Attention : config.json doit au minimum avoir o=r comme permission
 mv config_example.json config/config.json
-```
-
-Modifier le fichier `config.json` pour s'adapter à la machine virtuelle courante, puis :
-
-```bash
 docker-compose up -d
 docker logs -f graph-bot
 ```
 
 Il est possible d'utiliser un chemin alternatif pour le point de montage de la configuration en modifiant la variable d'environnement `DATA_PATH` dans `docker-compose.yml`, ainsi que le chemin du volume.
 
-Si tout se passe bien, le résultat se trouve dans `config/output/<vm>.gv.png`. Pour l'instant, le PNG est généré directement par le script.
+Si tout se passe bien, les résultat se trouvent dans `./config/output`.
+*Pour l'instant, le PNG est généré directement par le script.*
 
 ### TLS
 
-Si on interroge des hôtes à distance, il faut rajouter de la configuration supplémentaire. Pour chaque hôte, on ajoutera dans `config.json` :
+Si on interroge des hôtes à distance, il faut rajouter de la configuration supplémentaire. Pour chaque hôte distant, on ajoutera dans `config.json` :
 
 ```json
 "tls_config":
@@ -78,11 +75,18 @@ Si on interroge des hôtes à distance, il faut rajouter de la configuration sup
 ```
 
 Avec :
-* `ca_cert` : certificat de la CA de l'hôte
+* `ca_cert` : certificat de la CA de l'hôte distant
 * `cert` : certificat du client
 * `key`  : clé du client
 
 Les chemins sont donnés relativement à `DATA_PATH`. Dans l'exemple ci-dessus, les certificats seront donc montés dans `/config/auth/<vm>/*.pem`.
+
+Le conteneur tournant en tant qu'utilisateur non-privilégié, il n'a pas accès en lecture aux certificats/clé. Pour lui donner cet accès, on peut par exemple lancer la commande suivante :
+
+```bash
+# 999 est l'UID du premier user créé dans le conteneur, on mappe les deux
+chown -R 999 ./config/auth
+```
 
 ## Sécurité
 
