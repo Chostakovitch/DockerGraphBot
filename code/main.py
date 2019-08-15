@@ -78,10 +78,7 @@ class GraphBuilder:
     '''
     def build_graph(self):
         running = self.__get_containers()
-        graph_attr = {'splines': 'false', 'concentrate': 'true', 'ranksep': '0.8 equally', 'fontcolor': self.color_scheme['dark_text']}
-        node_attr = {'style': 'filled,rounded', 'shape': 'record'}
-        edge_attr = {}
-        self.graph = graphviz.Digraph(comment = 'Machine virtuelle : {0}'.format(self.vm_name), format = 'png', graph_attr = graph_attr, node_attr = node_attr, edge_attr = edge_attr)
+        self.graph = graphviz.Digraph(name = '{0}'.format(self.vm_name), comment = 'Machine virtuelle : {0}'.format(self.vm_name), node_attr = {'shape': 'record'})
 
         # Create a subgraph for the virtual machine
         with self.graph.subgraph(name = 'cluster_0') as vm:
@@ -212,6 +209,11 @@ class GraphBot:
     def __init__(self):
         with open(os.path.join(BASE_PATH, 'config.json'), 'r') as fd:
             self.config = json.load(fd)
+
+        graph_attr = {'splines': 'false', 'concentrate': 'true', 'ranksep': '0.8 equally', 'fontcolor': self.config['color_scheme']['dark_text']}
+        node_attr = {'style': 'filled,rounded', 'shape': 'record'}
+        edge_attr = {}
+        self.graph = graphviz.Digraph(name = 'Architecture Picasoft', comment = 'Architecture Picasoft', graph_attr = graph_attr, node_attr = node_attr, edge_attr = edge_attr, format = 'png')
 
     '''
     Builds a Digraph object representing the architecture of all hosts.
