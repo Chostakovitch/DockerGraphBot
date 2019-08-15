@@ -217,9 +217,19 @@ class GraphBot:
 
     '''
     Builds a Digraph object representing the architecture of all hosts.
-    After running this function, the graph attribute contains a Digraph object.
+    After running this function, the graph attribute contains the final graph.
     '''
     def create_graph(self):
+        for subgraph in self.__build_subgraphs():
+            self.graph.subgraph(graph = subgraph)
+        self.graph.render(os.path.join(BASE_PATH, 'output', 'picasoft'))
+
+    '''
+    Query all hosts and return all corresponding graphs
+    :returns Graphs of hosts
+    :rtype list(Digraph)
+    '''
+    def __build_subgraphs(self):
         graphs = []
         for host in self.config['hosts']:
             if host['host_url'] == 'localhost':
@@ -241,6 +251,9 @@ class GraphBot:
             builder = GraphBuilder(docker_client, self.config['color_scheme'], host['vm'])
             builder.build_graph()
             graphs.append(builder.graph)
+
+        return graphs
+
 
 if __name__ == '__main__':
     bot = GraphBot()
