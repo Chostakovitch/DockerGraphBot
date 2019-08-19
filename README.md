@@ -1,7 +1,5 @@
 # Graph Bot (WIP)
 
-Note : le code n'est pas très beau pour le moment et sera amélioré. (voir TODO)
-
 ## Fonctionnement
 
 Ce projet vise à automatiser la construction des schémas de l’infrastructure se trouvant sur [cette page](https://wiki.picasoft.net/doku.php?id=infrastructure:architecture_globale).
@@ -99,7 +97,6 @@ De plus, si les hôtes sont distants, l'accès s'étend aux machines distantes c
 ## Todo
 
 * Mettre en place la CI
-* Refacto le code, en particulier sur la partie coloration, agencement
 * Ajouter des liens invisibles entre clusters pour forcer l'agencement de haut en bas
 * Produire un seul gros graphe avec les infos DNS
 * Ajouter la légende
