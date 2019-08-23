@@ -96,7 +96,7 @@ class GraphBuilder:
         )
 
         # Create a subgraph for the virtual machine
-        with self.graph.subgraph(name = 'cluster_0') as vm:
+        with self.graph.subgraph(name = 'cluster_{0}'.format(self.__node_name(self.vm_name))) as vm:
             vm.attr(
                 label = 'Machine virtuelle : {0}'.format(self.vm_name),
                 **self.__get_style(GraphElement.VM)
@@ -110,13 +110,13 @@ class GraphBuilder:
 
             # Add all running containers as a node in their own network subgraph
             for k, v in network_dict.items():
-                with vm.subgraph(name = 'cluster_{0}'.format(k)) as network:
+                with vm.subgraph(name = 'cluster_{0}'.format(self.__node_name(k))) as network:
                     network.attr(
                         label = 'Réseau : {0}'.format(k),
                         **self.__get_style(GraphElement.NETWORK)
                     )
                     for c in v:
-                        with network.subgraph(name = 'cluster_{0}'.format(c.image)) as image:
+                        with network.subgraph(name = 'cluster_{0}'.format(self.__node_name(c.image))) as image:
                             image.attr(
                                 label = c.image,
                                 **self.__get_style(GraphElement.IMAGE)
