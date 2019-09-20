@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "title": "JSON SCHEMA of Graph Bot",
+  "description": "This file is used to validate GraphBot configuration.",
+  "type": "object",
+  "required": [
+    "hosts", "color_scheme"
+  ],
+  "properties": {
+    "hosts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "if": {
+          "properties": { "host_url": { "const": "localhost" } }
+        },
+        "then": {
+          "required": [ "vm", "host_url" ]
+        },
+        "else": {
+          "required": [ "vm", "host_url", "tls_config" ]
+        },
+        "properties": {
+          "vm": { "type": "string" },
+          "host_url": { "type": "string" },
+          "exclude": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "tls_config": {
+            "type": "object",
+            "properties": {
+              "ca_cert": { "type": "string" },
+              "cert": { "type": "string" },
+              "key": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "color_scheme": {
+      "type": "object",
+      "required": [ "traefik", "port", "link", "image", "container", "network", "vm", "dark_text", "bright_text" ],
+      "properties": {
+        "traefik": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "port": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "link": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "image": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "container": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "network": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "vm": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "dark_text": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "bright_text": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" }
+      }
+    }
+  }
+}

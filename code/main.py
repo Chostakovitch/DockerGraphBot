@@ -9,6 +9,7 @@ import os
 from ruamel.yaml import YAML
 from collections import defaultdict
 from enum import Enum
+from jsonschema import validate
 
 TRAEFIK_DEFAULT_PORT = '80/tcp'
 BASE_PATH = os.environ['DATA_PATH']
@@ -313,6 +314,9 @@ class GraphBot:
         with open(config_path) as fd:
             self.config = json.load(fd)
 
+        # Validate configuration
+        self.__check_config()
+
         graph_attr = {
             # Draw straight lines
             'splines': 'false',
@@ -354,7 +358,7 @@ class GraphBot:
         for host in self.config['hosts']:
             if host['host_url'] == 'localhost':
                 docker_client = docker.from_env()
-            elif 'tls_config' in host:
+            else:
                 tls_config = docker.tls.TLSConfig(
                     client_cert = (
                         os.path.join(BASE_PATH, host['tls_config']['cert']),
@@ -368,15 +372,30 @@ class GraphBot:
                     # verify = True
                 )
                 docker_client = docker.DockerClient(base_url = host['host_url'], tls = tls_config)
-            else:
-                raise Exception('Missing tls_config !')
 
-            builder = GraphBuilder(docker_client, self.config['color_scheme'], host['vm'])
+            builder = GraphBuilder(docker_client, self.config['color_scheme'], host['vm'], host.get('exclude', []))
             builder.build_graph()
             graphs.append(builder.graph)
 
         return graphs
 
+    '''
+    Perform syntaxic and logic checks of the configuration.
+    :returns None if the configuration is clean, an informative error message otherwise
+    :rtype str
+    '''
+    def __check_config(self):
+        with open('schema.json') as schema:
+            try:
+                validate(self.config, json.load(schema))
+            except Exception as valid_err:
+                raise Exception("Invalid configuration: {}".format(valid_err))
+
+        hosts = [host['vm'] for host in self.config['hosts']]
+        unique_hosts = set(hosts)
+        if len(hosts) != len(unique_hosts):
+            duplicate = [h for h in hosts if not h in unique_hosts or unique_hosts.remove(h)]
+            raise Exception('Invalid configuration: two hosts cannot have the same name ({})'.format(duplicate[0]))
 
 if __name__ == '__main__':
     bot = GraphBot()
