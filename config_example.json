@@ -24,10 +24,10 @@
 		"port": "#86c49b",
 		"link": "#75e9cd",
 		"image": "#e1efe6",
-		"container": "white",
-		"network": "white",
+		"container": "#ffffff",
+		"network": "#ffffff",
 		"vm": "#e1efe6",
 		"dark_text": "#32384f",
-		"bright_text": "white"
+		"bright_text": "#ffffff"
 	}
 }
