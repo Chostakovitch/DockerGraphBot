@@ -79,13 +79,6 @@ Avec :
 
 Les chemins sont donnés relativement à `DATA_PATH`. Dans l'exemple ci-dessus, les certificats seront donc montés dans `/config/auth/<vm>/*.pem`.
 
-Le conteneur tournant en tant qu'utilisateur non-privilégié, il n'a pas accès en lecture aux certificats/clé. Pour lui donner cet accès, on peut par exemple lancer la commande suivante :
-
-```bash
-# 999 est l'UID du premier user créé dans le conteneur, on mappe les deux
-chown -R 999 ./config/auth
-```
-
 ## Sécurité
 
 Le conteneur est lancé en tant qu'utilisateur privilégié. En effet, les clés privées appartiendront très probablement à `root` sur l'hôte, en `600`, et il est souhaitable qu'elles le restent.
