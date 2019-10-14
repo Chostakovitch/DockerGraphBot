@@ -2,7 +2,8 @@
 	"hosts": [
 		{
 			"vm": "<pica01|pica02|monitoring>",
-			"host_url": "<vm>.picasoft.net:2376",
+			"host_url": "<vm>.picasoft.net",
+			"port": 2376
 			"exclude": [
 				"[container_name]"
 			],

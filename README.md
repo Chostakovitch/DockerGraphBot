@@ -98,12 +98,11 @@ De plus, si les hôtes sont distants, l'accès s'étend aux machines distantes c
 
 Je répète : avoir accès au conteneur `graph-bot` est équivalent à obtenir un accès `root` sur l'hôte ainsi que sur toutes les machines distantes concernées.
 
-Il est donc **fondamental** que les personnes ayant accès à la machine sur laquelle s'exécute `graph-bot` aient accès à l'ensemble des hôtes configurés, sans quoi ces personnes pourraient escalader leurs privilèges. Autrement dit, il est préférable que `graph-bot` s'exécute sur la machine la plus restreinte, *e.g.* `monitoring`.
+Il est donc **fondamental** que les personnes ayant accès à la machine sur laquelle s'exécute `graph-bot` **et** faisant partie du groupe `docker` aient accès à l'ensemble des hôtes configurés, sans quoi ces personnes pourraient escalader leurs privilèges. Autrement dit, il est préférable que `graph-bot` s'exécute sur la machine la plus restreinte de l'infrastructure.
 
 ## Todo
 
 * Mettre en place la CI
 * Ajouter des liens invisibles entre clusters pour forcer l'agencement de haut en bas
-* Produire un seul gros graphe avec les infos DNS
 * Ajouter la légende
 * Utiliser le type hinting plutôt que ma doc dégueu des fonctions

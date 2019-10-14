@@ -18,11 +18,12 @@
           "required": [ "vm", "host_url" ]
         },
         "else": {
-          "required": [ "vm", "host_url", "tls_config" ]
+          "required": [ "vm", "host_url", "port", "tls_config" ]
         },
         "properties": {
           "vm": { "type": "string" },
           "host_url": { "type": "string" },
+          "port": { "type": "integer" },
           "exclude": {
             "type": "array",
             "items": { "type": "string" }

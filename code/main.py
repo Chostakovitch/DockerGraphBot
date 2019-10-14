@@ -6,10 +6,13 @@ import graphviz
 import json
 import socket
 import os
+import dns.resolver
+
 from ruamel.yaml import YAML
 from collections import defaultdict
 from enum import Enum
 from jsonschema import validate
+from urllib.request import urlopen
 
 TRAEFIK_DEFAULT_PORT = '80/tcp'
 BASE_PATH = os.environ['DATA_PATH']
@@ -68,6 +71,12 @@ and constructs a graph showing dependencies between containers, images and ports
 We also use Traefik labels to show links between the reverse proxy and the containers.
 '''
 class GraphBuilder:
+    @property
+    def graph(self):
+        if self.__graph is None:
+            self.__build_graph()
+        return self.__graph
+
     '''
     Constructor.
 
@@ -82,22 +91,23 @@ class GraphBuilder:
         self.vm_name = vm_name
         self.exclude = exclude
         self.has_traefik = False
+        self.__graph = None
 
     '''
     Builds a Digraph object representing a single host.
     After running this function, the Digraph object is accessible
     via the graph property.
     '''
-    def build_graph(self):
+    def __build_graph(self):
         running = self.__get_containers()
-        self.graph = graphviz.Digraph(
+        self.__graph = graphviz.Digraph(
             name = '{0}'.format(self.vm_name),
             comment = 'Machine virtuelle : {0}'.format(self.vm_name),
             node_attr = {'shape': 'record'}
         )
 
         # Create a subgraph for the virtual machine
-        with self.graph.subgraph(name = 'cluster_{0}'.format(self.__node_name(self.vm_name))) as vm:
+        with self.__graph.subgraph(name = 'cluster_{0}'.format(self.__node_name(self.vm_name))) as vm:
             vm.attr(
                 label = 'Machine virtuelle : {0}'.format(self.vm_name),
                 **self.__get_style(GraphElement.VM)
@@ -170,8 +180,6 @@ class GraphBuilder:
                             self.__node_name(c.name, expose),
                             **self.__get_style(GraphElement.PORT)
                         )
-
-        self.graph.render(os.path.join(BASE_PATH, 'output', '{0}'.format(self.vm_name)))
 
     '''
     Returns a dictionary than can be unpacked to create a graph element (node, edge or cluster).
@@ -356,8 +364,10 @@ class GraphBot:
     def __build_subgraphs(self):
         graphs = []
         for host in self.config['hosts']:
+            vm_name = host['vm'] + ' | '
             if host['host_url'] == 'localhost':
                 docker_client = docker.from_env()
+                vm_name += urlopen('http://ip.42.pl/raw').read().decode("utf-8")
             else:
                 tls_config = docker.tls.TLSConfig(
                     client_cert = (
@@ -366,10 +376,11 @@ class GraphBot:
                     ),
                     verify = os.path.join(BASE_PATH, host['tls_config']['ca_cert'])
                 )
-                docker_client = docker.DockerClient(base_url = host['host_url'], tls = tls_config)
+                docker_client = docker.DockerClient(base_url = '{0}:{1}'.format(host['host_url'], host['port']), tls = tls_config)
+                for result in dns.resolver.query(host['host_url']):
+                    vm_name += '{} '.format(result.address)
 
-            builder = GraphBuilder(docker_client, self.config['color_scheme'], host['vm'], host.get('exclude', []))
-            builder.build_graph()
+            builder = GraphBuilder(docker_client, self.config['color_scheme'], vm_name, host.get('exclude', []))
             graphs.append(builder.graph)
 
         return graphs
