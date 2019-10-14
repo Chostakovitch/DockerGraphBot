@@ -88,11 +88,17 @@ chown -R 999 ./config/auth
 
 ## Sécurité
 
-Le conteneur est lancé en tant qu'utilisateur non-privilégié, en revanche le socket Docker est monté à l'intérieur, et le socket leake l'ensemble des informations associées à tous les conteneurs.
+Le conteneur est lancé en tant qu'utilisateur privilégié. En effet, les clés privées appartiendront très probablement à `root` sur l'hôte, en `600`, et il est souhaitable qu'elles le restent.
 
-Il est donc important de le laisser dans un réseau Docker isolé, sans connexion avec l'extérieur et sans ports exposés.
+Aussi, le socket Docker est monté à l'intérieur du conteneur ; il leake l'ensemble des informations associées à tous les conteneurs et permet de modifier leur état sans restrictions.
+**Pire, monter le socket Docker est équivalent à donner un accès `root` sur l'hôte.**
 
-De plus, si les hôtes sont distants, l'accès s'étend aux machines distantes car le conteneur a accès à la clé privée du client. Il est donc important que les personnes ayant accès à la machine sur laquelle s'exécute `graph-bot` aient accès à l'ensemble des hôtes configurés, sans quoi ces personnes pourraient escalader leurs privilèges. Autrement dit, il est préférable que `graph-bot` s'exécute sur la machine la plus restreinte, *e.g.* `monitoring`.
+Il est donc **obligatoire** de le laisser dans un réseau Docker isolé et sans ports exposés (il n'y a aucune raison que ce soit le cas!).
+De plus, si les hôtes sont distants, l'accès s'étend aux machines distantes car le conteneur a alors accès aux sockets des clients.
+
+Je répète : avoir accès au conteneur `graph-bot` est équivalent à obtenir un accès `root` sur l'hôte ainsi que sur toutes les machines distantes concernées.
+
+Il est donc **fondamental** que les personnes ayant accès à la machine sur laquelle s'exécute `graph-bot` aient accès à l'ensemble des hôtes configurés, sans quoi ces personnes pourraient escalader leurs privilèges. Autrement dit, il est préférable que `graph-bot` s'exécute sur la machine la plus restreinte, *e.g.* `monitoring`.
 
 ## Todo
 
