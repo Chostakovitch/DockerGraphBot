@@ -1,3 +1,4 @@
 docker>=3.7.2
 graphviz>=0.10.0
 ruamel.yaml>=0.15.94
+jsonschema>=3.0

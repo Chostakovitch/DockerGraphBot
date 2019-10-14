@@ -364,12 +364,7 @@ class GraphBot:
                         os.path.join(BASE_PATH, host['tls_config']['cert']),
                         os.path.join(BASE_PATH, host['tls_config']['key'])
                     ),
-                    ca_cert = os.path.join(BASE_PATH, host['tls_config']['ca_cert']),
-                    assert_hostname = True,
-                    # Should work but raise TypeError: inet_aton() argument 1 must be str, not bool.
-                    # The code [here](https://github.com/docker/docker-py/blob/master/docker/tls.py#L100) seems ok...
-                    # So we'll get InsecureRequestWarning: Unverified HTTPS request is being made when running this script
-                    # verify = True
+                    verify = os.path.join(BASE_PATH, host['tls_config']['ca_cert'])
                 )
                 docker_client = docker.DockerClient(base_url = host['host_url'], tls = tls_config)
 
