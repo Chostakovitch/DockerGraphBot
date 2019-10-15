@@ -1,5 +1,19 @@
 # Graph Bot (WIP)
 
+<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:0 orderedList:0 -->
+
+- [Graph Bot (WIP)](#graph-bot-wip)
+	- [Fonctionnement](#fonctionnement)
+	- [Modes de fonctionnement](#modes-de-fonctionnement)
+	- [Usage](#usage)
+		- [Base](#base)
+		- [TLS](#tls)
+		- [Cas particuliers](#cas-particuliers)
+	- [Sécurité](#scurit)
+	- [Todo](#todo)
+
+<!-- /TOC -->
+
 ## Fonctionnement
 
 Ce projet vise à automatiser la construction des schémas de l’infrastructure se trouvant sur [cette page](https://wiki.picasoft.net/doku.php?id=infrastructure:architecture_globale).
@@ -56,7 +70,7 @@ docker logs -f graph-bot
 
 Il est possible d'utiliser un chemin alternatif pour le point de montage de la configuration en modifiant la variable d'environnement `DATA_PATH` dans `docker-compose.yml`, ainsi que le chemin du volume.
 
-Si tout se passe bien, les résultat se trouvent dans `./config/output`.
+Si tout se passe bien, le résultat se trouve dans `./config/output`, sous le nom `<organization>` au format DOT, et `<organization>.png` pour l'image générée.
 *Pour l'instant, le PNG est généré directement par le script.*
 
 ### TLS
@@ -78,6 +92,15 @@ Avec :
 * `key`  : clé du client
 
 Les chemins sont donnés relativement à `DATA_PATH`. Dans l'exemple ci-dessus, les certificats seront donc montés dans `/config/auth/<vm>/*.pem`.
+
+### Cas particuliers
+
+Si les hôtes ainsi que les conteneurs sont nombreux, il est possible que le graphe final généré par défaut soit très large.
+GraphViz n'est pas prévu pour aligner verticalement les sous-graphes, ou clusters.
+
+À cet effet, il est possible de passer le paramètre `merge` à `false` afin de générer un graphe par hôte.
+
+Le nom du graphe généré aura le format `<vm>.png`.
 
 ## Sécurité
 

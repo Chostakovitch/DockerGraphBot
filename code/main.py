@@ -83,11 +83,13 @@ class GraphBuilder:
     :param docker_client (DockerClient): docker client used to build the graph
     :param color_scheme (dict): colors used for the graph
     :param vm_name (str): name of the virtual machine
+    :param vm_label (str): label to put on the virtual machine graph
     :param exclude (list): name of containers to exclude of the layout
     '''
-    def __init__(self, docker_client, color_scheme, vm_name, exclude = []):
+    def __init__(self, docker_client, color_scheme, vm_label, vm_name, exclude = []):
         self.color_scheme = color_scheme
         self.docker_client = docker_client
+        self.vm_label = vm_label
         self.vm_name = vm_name
         self.exclude = exclude
         self.has_traefik = False
@@ -101,15 +103,14 @@ class GraphBuilder:
     def __build_graph(self):
         running = self.__get_containers()
         self.__graph = graphviz.Digraph(
-            name = '{0}'.format(self.vm_name),
-            comment = 'Machine virtuelle : {0}'.format(self.vm_name),
-            node_attr = {'shape': 'record'}
+            name = '{0}'.format(self.vm_label),
+            comment = 'Machine virtuelle : {0}'.format(self.vm_label)
         )
 
         # Create a subgraph for the virtual machine
-        with self.__graph.subgraph(name = 'cluster_{0}'.format(self.vm_name)) as vm:
+        with self.__graph.subgraph(name = 'cluster_{0}'.format(self.vm_label)) as vm:
             vm.attr(
-                label = 'Machine virtuelle : {0}'.format(self.vm_name),
+                label = 'Machine virtuelle : {0}'.format(self.vm_label),
                 **self.__get_style(GraphElement.VM)
             )
 
@@ -244,7 +245,7 @@ class GraphBuilder:
     :rtype str
     '''
     def __node_name(self, name, subname = None):
-        name = '{0}_{1}'.format(name, self.vm_name)
+        name = '{0}_{1}'.format(name, self.vm_label)
         if subname is not None:
             name += ':{0}'.format(subname)
         return name
@@ -343,10 +344,14 @@ class GraphBot:
             # Defaut text/border color
             'fontcolor': self.config['color_scheme']['dark_text']
         }
-        # All nodes are colorfull and with rounded borders
-        node_attr = { 'style': 'filled,rounded' }
+        node_attr = {
+            # All nodes are colorfull and with rounded borders
+            'style': 'filled,rounded',
+            # Allow sub-nodes
+            'shape': 'record'
+        }
 
-        graph_name = name = '{} architecture'.format(self.config['organization'])
+        graph_name = '{} architecture'.format(self.config['organization'])
         self.__graph = graphviz.Digraph(
             name = graph_name,
             comment = graph_name,
@@ -361,10 +366,15 @@ class GraphBot:
     '''
     def create_graph(self):
         for builder in self.__build_subgraphs():
-            self.__graph.subgraph(graph = builder.graph)
+            if self.config['merge']:
+                self.__graph.subgraph(graph = builder.graph)
+            else:
+                self.__graph.body = builder.graph.body
+                self.graph.render(os.path.join(BASE_PATH, 'output', builder.vm_name))
 
-        self.graph.render(os.path.join(BASE_PATH, 'output', 'picasoft'))
-        print("Global rendering is successful !")
+        if self.config['merge']:
+            self.graph.render(os.path.join(BASE_PATH, 'output', 'picasoft'))
+            print("Global rendering is successful !")
 
     '''
     Query all hosts and return all corresponding graphs
@@ -390,7 +400,7 @@ class GraphBot:
                 for result in dns.resolver.query(host['host_url']):
                     vm_name += '{} '.format(result.address)
 
-            builder = GraphBuilder(docker_client, self.config['color_scheme'], vm_name, host.get('exclude', []))
+            builder = GraphBuilder(docker_client, self.config['color_scheme'], vm_name, host['vm'], host.get('exclude', []))
             print('{} built.'.format(builder.graph.name))
             graphs.append(builder)
 

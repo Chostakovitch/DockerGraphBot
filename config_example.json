@@ -1,5 +1,6 @@
 {
 	"organization": "Picasoft",
+	"merge": true
 	"hosts": [
 		{
 			"vm": "<pica01|pica02|monitoring>",
