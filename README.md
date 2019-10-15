@@ -96,6 +96,6 @@ Il est donc **fondamental** que les personnes ayant accès à la machine sur laq
 ## Todo
 
 * Mettre en place la CI
-* Ajouter des liens invisibles entre clusters pour forcer l'agencement de haut en bas
 * Ajouter la légende
 * Utiliser le type hinting plutôt que ma doc dégueu des fonctions
+* Réorganiser en plusieurs fichiers ?
