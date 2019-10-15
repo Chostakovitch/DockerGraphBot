@@ -1,4 +1,5 @@
 {
+	"organization": "Picasoft",
 	"hosts": [
 		{
 			"vm": "<pica01|pica02|monitoring>",

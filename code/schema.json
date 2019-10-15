@@ -4,7 +4,7 @@
   "description": "This file is used to validate GraphBot configuration.",
   "type": "object",
   "required": [
-    "hosts", "color_scheme"
+    "organization", "hosts", "color_scheme"
   ],
   "properties": {
     "hosts": {
@@ -53,6 +53,7 @@
         "dark_text": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "bright_text": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" }
       }
-    }
+    },
+    "organization": { "type": "string" }
   }
 }
