@@ -104,13 +104,13 @@ class GraphBuilder:
         running = self.__get_containers()
         self.__graph = graphviz.Digraph(
             name = '{0}'.format(self.vm_label),
-            comment = 'Machine virtuelle : {0}'.format(self.vm_label)
+            comment = 'Virtual machine : {0}'.format(self.vm_label)
         )
 
         # Create a subgraph for the virtual machine
         with self.__graph.subgraph(name = 'cluster_{0}'.format(self.vm_label)) as vm:
             vm.attr(
-                label = 'Machine virtuelle : {0}'.format(self.vm_label),
+                label = 'Virtual machine : {0}'.format(self.vm_label),
                 **self.__get_style(GraphElement.VM)
             )
 
@@ -124,7 +124,7 @@ class GraphBuilder:
             for k, v in network_dict.items():
                 with vm.subgraph(name = 'cluster_{0}'.format(self.__node_name(k))) as network:
                     network.attr(
-                        label = 'Réseau : {0}'.format(k),
+                        label = 'Network : {0}'.format(k),
                         **self.__get_style(GraphElement.NETWORK)
                     )
                     for c in v:
@@ -325,6 +325,55 @@ class GraphBot:
             self.create_graph()
         return self.__graph
 
+    @property
+    def legend(self):
+        if self.__legend is None:
+            self.__legend = graphviz.Digraph('legend', node_attr = { 'style': 'rounded', 'shape': 'plain' }, format = 'png')
+            self.__legend.node('legend', '''<
+            <TABLE BORDER="1" CELLBORDER="0" CELLSPACING="10" CELLPADDING="4">
+                <TR>
+                    <TD COLSPAN="2"><B>Legend of {0} architecture</B></TD>
+                </TR>
+                <TR>
+                    <TD ALIGN="LEFT">Traefik "Host" label</TD>
+                    <TD BORDER="1" WIDTH="100" BGCOLOR="{1}"></TD>
+                </TR>
+                <TR>
+                    <TD ALIGN="LEFT">Host port</TD>
+                    <TD BORDER="1" WIDTH="100" BGCOLOR="{2}"></TD>
+                </TR>
+                <TR>
+                    <TD ALIGN="LEFT">Docker link</TD>
+                    <TD BORDER="1" WIDTH="100" BGCOLOR="{3}"></TD>
+                </TR>
+                <TR>
+                    <TD ALIGN="LEFT">Image</TD>
+                    <TD BORDER="1" WIDTH="100" BGCOLOR="{4}"></TD>
+                </TR>
+                <TR>
+                    <TD ALIGN="LEFT">Container, exposed ports</TD>
+                    <TD BORDER="1" WIDTH="100" BGCOLOR="{5}"></TD>
+                </TR>
+                <TR>
+                    <TD ALIGN="LEFT">Docker network</TD>
+                    <TD BORDER="1" WIDTH="100" BGCOLOR="{6}"></TD>
+                </TR>
+                <TR>
+                    <TD ALIGN="LEFT">Virtual machine</TD>
+                    <TD BORDER="1" WIDTH="100" BGCOLOR="{7}"></TD>
+                </TR>
+            </TABLE>>'''.format(
+                self.config['organization'],
+                self.config['color_scheme']['traefik'],
+                self.config['color_scheme']['port'],
+                self.config['color_scheme']['link'],
+                self.config['color_scheme']['image'],
+                self.config['color_scheme']['container'],
+                self.config['color_scheme']['network'],
+                self.config['color_scheme']['vm']
+            ))
+        return self.__legend
+
     def __init__(self, config_path = os.path.join(BASE_PATH, 'config.json')):
         with open(config_path) as fd:
             self.config = json.load(fd)
@@ -332,6 +381,14 @@ class GraphBot:
         # Validate configuration
         self.__check_config()
 
+        self.__graph = None
+        self.__legend = None
+
+    '''
+    Builds a Digraph object representing the architecture of all hosts.
+    After running this function, the __graph attribute contains the final graph.
+    '''
+    def create_graph(self):
         graph_attr = {
             # Draw straight lines
             'splines': 'false',
@@ -350,7 +407,6 @@ class GraphBot:
             # Allow sub-nodes
             'shape': 'record'
         }
-
         graph_name = '{} architecture'.format(self.config['organization'])
         self.__graph = graphviz.Digraph(
             name = graph_name,
@@ -359,22 +415,19 @@ class GraphBot:
             node_attr = node_attr,
             format = 'png'
         )
-
-    '''
-    Builds a Digraph object representing the architecture of all hosts.
-    After running this function, the __graph attribute contains the final graph.
-    '''
-    def create_graph(self):
         for builder in self.__build_subgraphs():
             if self.config['merge']:
                 self.__graph.subgraph(graph = builder.graph)
             else:
                 self.__graph.body = builder.graph.body
-                self.graph.render(os.path.join(BASE_PATH, 'output', builder.vm_name))
+                self.__graph.render(os.path.join(BASE_PATH, 'output', builder.vm_name))
 
         if self.config['merge']:
-            self.graph.render(os.path.join(BASE_PATH, 'output', 'picasoft'))
+            self.__graph.render(os.path.join(BASE_PATH, 'output', 'picasoft'))
             print("Global rendering is successful !")
+
+        self.legend.render(os.path.join(BASE_PATH, 'output', 'legend'))
+        print("Legend rendering is successful !")
 
     '''
     Query all hosts and return all corresponding graphs

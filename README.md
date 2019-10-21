@@ -70,8 +70,7 @@ docker logs -f graph-bot
 
 Il est possible d'utiliser un chemin alternatif pour le point de montage de la configuration en modifiant la variable d'environnement `DATA_PATH` dans `docker-compose.yml`, ainsi que le chemin du volume.
 
-Si tout se passe bien, le résultat se trouve dans `./config/output`, sous le nom `<organization>` au format DOT, et `<organization>.png` pour l'image générée.
-*Pour l'instant, le PNG est généré directement par le script.*
+Si tout se passe bien, le résultat se trouve dans `./config/output`, sous le nom `<organization>` au format DOT, et `<organization>.png` pour l'image générée. La légende correspond au(x) fichier(s) généré(s) se trouve dans `./config/output/legend.png`.
 
 ### TLS
 
@@ -119,6 +118,7 @@ Il est donc **fondamental** que les personnes ayant accès à la machine sur laq
 ## Todo
 
 * Mettre en place la CI
-* Ajouter la légende
+* Ré-écrire le README
+* Traduction anglais/français
 * Utiliser le type hinting plutôt que ma doc dégueu des fonctions
 * Réorganiser en plusieurs fichiers ?
