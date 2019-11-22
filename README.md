@@ -121,6 +121,5 @@ Il est donc **fondamental** que les personnes ayant accès à la machine sur laq
 * Ré-écrire le README
 * Traduction anglais/français
 * Utiliser le type hinting plutôt que ma doc dégueu des fonctions
-* Réorganiser en plusieurs fichiers ?
 * Configuration d'un cron
 * Ajout doc développeur
