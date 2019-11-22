@@ -32,5 +32,13 @@
 		"vm": "#e1efe6",
 		"dark_text": "#32384f",
 		"bright_text": "#ffffff"
-	}
+	},
+	"actions": [
+		{
+			"type": "webdav",
+			"hostname": "example.com/nextcloud/remote.php/dav/files",
+			"login": "login",
+			"password": "password"
+		}
+	]
 }

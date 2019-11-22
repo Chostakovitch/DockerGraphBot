@@ -4,7 +4,7 @@
   "description": "This file is used to validate GraphBot configuration.",
   "type": "object",
   "required": [
-    "organization", "merge", "hosts", "color_scheme"
+    "organization", "merge", "hosts", "color_scheme", "actions"
   ],
   "properties": {
     "hosts": {
@@ -55,6 +55,27 @@
       }
     },
     "organization": { "type": "string" },
-    "merge": { "type": "boolean" }
+    "merge": { "type": "boolean" },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "if": {
+          "properties": { "type": { "const": "webdav" } }
+        },
+        "then": {
+          "required": [ "hostname", "login", "password" ]
+        },
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "webdav"
+          },
+          "hostname": { "type": "string" },
+          "login": { "type": "string" },
+          "password": { "type": "string" }
+        }
+      }
+    }
   }
 }
