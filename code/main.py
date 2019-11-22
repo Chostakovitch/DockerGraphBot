@@ -247,7 +247,7 @@ class GraphBuilder:
     :rtype str
     '''
     def __node_name(self, name, subname = None):
-        name = '{0}_{1}'.format(name, self.vm_label)
+        name = '{0}_{1}'.format(name, self.vm_name)
         if subname is not None:
             name += ':{0}'.format(subname)
         return name
@@ -324,7 +324,7 @@ class GraphBot:
     @property
     def graph(self):
         if self.__graph is None:
-            self.create_graph()
+            self.build()
         return self.__graph
 
     @property
