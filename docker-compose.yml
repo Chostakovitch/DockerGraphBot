@@ -5,7 +5,9 @@ services:
     container_name: "graph-bot"
     volumes:
       - "./config:/config"
+      - "./output:/output"
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
       DATA_PATH: '/config'
+      OUTPUT_PATH: '/output'
     restart: unless-stopped

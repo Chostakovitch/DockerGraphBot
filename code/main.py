@@ -13,9 +13,11 @@ from collections import defaultdict
 from enum import Enum
 from jsonschema import validate
 from urllib.request import urlopen
+from datetime import datetime
 
 TRAEFIK_DEFAULT_PORT = '80/tcp'
 BASE_PATH = os.environ['DATA_PATH']
+OUTPUT_PATH = os.environ['OUTPUT_PATH']
 
 class GraphElement(Enum):
     def __repr__(self):
@@ -383,12 +385,13 @@ class GraphBot:
 
         self.__graph = None
         self.__legend = None
+        self.__generated_files = []
 
     '''
     Builds a Digraph object representing the architecture of all hosts.
     After running this function, the __graph attribute contains the final graph.
     '''
-    def create_graph(self):
+    def build(self):
         graph_attr = {
             # Draw straight lines
             'splines': 'false',
@@ -415,18 +418,41 @@ class GraphBot:
             node_attr = node_attr,
             format = 'png'
         )
-        for builder in self.__build_subgraphs():
+
+        graphs = self.__build_subgraphs()
+        self.__render_graph(graphs)
+
+        for a in self.config['actions']:
+            if type == 'webdav':
+                self.__upload_to_webdav()
+
+    '''
+    Upload the generated PNG in self.__generated_files to a WebDAV compatible server.
+    '''
+    def __upload_to_webdav(self):
+        return
+
+    '''
+    Render one or several graphs in PNG format from a list of graphs
+    :param graphs (list): GraphBuilder objects holding the graphs
+    '''
+    def __render_graph(self, graphs):
+        for builder in graphs:
             if self.config['merge']:
                 self.__graph.subgraph(graph = builder.graph)
             else:
                 self.__graph.body = builder.graph.body
-                self.__graph.render(os.path.join(BASE_PATH, 'output', builder.vm_name))
+                path = os.path.join(OUTPUT_PATH, builder.vm_name)
+                self.__graph.render(path)
+                self.__generated_files.append(path)
 
         if self.config['merge']:
-            self.__graph.render(os.path.join(BASE_PATH, 'output', 'picasoft'))
+            path = os.path.join(OUTPUT_PATH, self.config['organization'])
+            self.__graph.render(path)
+            self.__generated_files.append(path)
             print("Global rendering is successful !")
 
-        self.legend.render(os.path.join(BASE_PATH, 'output', 'legend'))
+        self.legend.render(os.path.join(OUTPUT_PATH, 'legend'))
         print("Legend rendering is successful !")
 
     '''
@@ -451,8 +477,8 @@ class GraphBot:
                 )
                 docker_client = docker.DockerClient(base_url = '{0}:{1}'.format(host['host_url'], host['port']), tls = tls_config)
                 for result in dns.resolver.query(host['host_url']):
-                    vm_name += '{} '.format(result.address)
-
+                    vm_name += '{}'.format(result.address)
+            vm_name += ' | Generated date : {} '.format(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
             builder = GraphBuilder(docker_client, self.config['color_scheme'], vm_name, host['vm'], host.get('exclude', []))
             print('{} built.'.format(builder.graph.name))
             graphs.append(builder)
@@ -479,4 +505,4 @@ class GraphBot:
 
 if __name__ == '__main__':
     bot = GraphBot()
-    bot.create_graph()
+    bot.build()
