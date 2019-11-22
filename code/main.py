@@ -291,7 +291,8 @@ class GraphBuilder:
 
         # Get all running containers
         for c in self.docker_client.containers.list():
-            if c.status == 'running' and c.name not in self.exclude:
+            # Some containers may do not have an image name for various reasons
+            if c.status == 'running' and c.name not in self.exclude and len(c.image.tags) > 0:
                 s = ShortContainer(c.name)
                 s.image = c.image.tags[0]
                 networks_conf = c.attrs['NetworkSettings']
