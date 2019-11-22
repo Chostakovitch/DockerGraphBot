@@ -25,14 +25,10 @@ L'idée est donc d'automatiser la construction de ces schémas, en suivant gross
 * Le script interroge périodiquement les machines virtuelles cibles
 * On interroge le démon Docker pour récupérer les informations intéressantes sur les conteneurs lancés
 * Si Traefik est utilisé comme reverse-proxy, on ajoute le mapping d'URL en tant que lien virtuel entre conteneurs
-* Un graphe au format DOT synthétisant ces informations est créé
-* Ce fichier est poussé sur un repo, une CI le compile et :
-	* Met à jour l'image utilisée par le Wiki, ou ;
-	* Pousse le fichier sur le Cloud, dont le lien connu à l'avance est répertorié dans le Wiki
+* Un graphe au format DOT synthétisant ces informations est créé et une ou des images sont générées
+* Des actions post-génération sont déclenchées, comme l'upload WebDAV.
 
-La CI est peut-être superflue, à voir s'il est souhaitable de versionner les fichiers DOT. Si non, on pourra directement pousser les images sur le Cloud.
-
-Enfin, on précise sur le wiki que les schémas sont générés automatiquement, et la date de la dernière génération réussie.
+Enfin, on précise sur le wiki que les schémas sont générés automatiquement.
 
 Tel que conçu, il ne devrait pas y avoir d'informations privées se retrouvant sur les schémas : seulements les conteneurs qui tournent et le cas échéant leur URL publique. Les ports exposés en interne ainsi que les mappings sont également précisés.
 
@@ -41,7 +37,7 @@ Tel que conçu, il ne devrait pas y avoir d'informations privées se retrouvant 
 Comme on peut le voir dans le fichier [config_example.json](./config_example.json), il est possible de spécifier plusieurs hôtes à interroger :
 
 * Si un seul hôte est précisé, le graphe final est identique au graphe de l'hôte
-* Si plusieurs hôtes sont précisés, le graphe final est une fusion de haut en bas des graphes des différents hôtes
+* Si plusieurs hôtes sont précisés, un ou plusieurs graphes sont générés en fonction du paramètre `merge` de la configuration.
 
 Les hôtes peuvent être locaux ou distants. Cette dernière possibilité nécessite :
 * Un démon Docker distant configuré pour être exposé via TCP et une CA configurée ;
@@ -61,16 +57,21 @@ git clone https://gitlab.utc.fr/picasoft/projets/graph-bot.git
 cd graph-bot
 docker build -t graph-bot .
 # On peut utiliser autre chose que config, mais il faut modifier docker-compose.yml
-mkdir config
+mkdir config output
 # Attention : config.json doit au minimum avoir o=r comme permission
 mv config_example.json config/config.json
 docker-compose up -d
 docker logs -f graph-bot
 ```
 
-Il est possible d'utiliser un chemin alternatif pour le point de montage de la configuration en modifiant la variable d'environnement `DATA_PATH` dans `docker-compose.yml`, ainsi que le chemin du volume.
+Il est possible d'utiliser un chemin alternatif pour le point de montage de la configuration et du répertoire d'images en modifiant les variables d'environnement `DATA_PATH` et `OUTPUT_PATH` dans `docker-compose.yml`, ainsi que le chemin du volume.
 
-Si tout se passe bien, le résultat se trouve dans `./config/output`, sous le nom `<organization>` au format DOT, et `<organization>.png` pour l'image générée. La légende correspond au(x) fichier(s) généré(s) se trouve dans `./config/output/legend.png`.
+Si tout se passe bien, le résultat se trouve dans `./config/output`, au format DOT et au format PNG.
+
+* Si `merge` vaut `true`, le fichier sortant porteront les noms `<organization>` et `<organization>.png`
+* Sinon, les noms seront au format `<vm>` et `<vm>.png`.
+
+La légende correspond au(x) fichier(s) généré(s) se trouve dans `./config/output/legend.png`.
 
 ### TLS
 
@@ -117,8 +118,9 @@ Il est donc **fondamental** que les personnes ayant accès à la machine sur laq
 
 ## Todo
 
-* Mettre en place la CI
 * Ré-écrire le README
 * Traduction anglais/français
 * Utiliser le type hinting plutôt que ma doc dégueu des fonctions
 * Réorganiser en plusieurs fichiers ?
+* Configuration d'un cron
+* Ajout doc développeur
