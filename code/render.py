@@ -13,6 +13,7 @@ from urllib.request import urlopen
 from datetime import datetime
 
 from build import GraphBuilder
+from actions import WebDAVUploader
 
 BASE_PATH = os.environ['DATA_PATH']
 OUTPUT_PATH = os.environ['OUTPUT_PATH']
@@ -124,17 +125,17 @@ class GraphBot:
 
         graphs = self.__build_subgraphs()
         self.__render_graph(graphs)
+        self.__post_actions()
 
+    '''
+    Perform eventuals actions after rendering the files
+    '''
+    def __post_actions(self):
         for a in self.config['actions']:
-            if type == 'webdav':
-                self.__upload_to_webdav()
-
-    '''
-    Upload the generated PNG in self.__generated_files to a WebDAV compatible server.
-    '''
-    def __upload_to_webdav(self):
-        return
-
+            # Upload generated PNG
+            if a['type'] == 'webdav':
+                web_dav = WebDAVUploader(a['hostname'], a['login'], a['password'], a['remote_path'])
+                web_dav.upload(self.__generated_files)
     '''
     Render one or several graphs in PNG format from a list of graphs
     :param graphs (list): GraphBuilder objects holding the graphs
@@ -147,15 +148,17 @@ class GraphBot:
                 self.__graph.body = builder.graph.body
                 path = os.path.join(OUTPUT_PATH, builder.vm_name)
                 self.__graph.render(path)
-                self.__generated_files.append(path)
+                self.__generated_files.append('{}.png'.format(path))
 
         if self.config['merge']:
             path = os.path.join(OUTPUT_PATH, self.config['organization'])
             self.__graph.render(path)
-            self.__generated_files.append(path)
+            self.__generated_files.append('{}.png'.format(path))
             print("Global rendering is successful !")
 
-        self.legend.render(os.path.join(OUTPUT_PATH, 'legend'))
+        legend_path = os.path.join(OUTPUT_PATH, 'legend')
+        self.__generated_files.append('{}.png'.format(legend_path))
+        self.legend.render(legend_path)
         print("Legend rendering is successful !")
 
     '''

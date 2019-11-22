@@ -36,9 +36,10 @@
 	"actions": [
 		{
 			"type": "webdav",
-			"hostname": "example.com/nextcloud/remote.php/dav/files",
+			"hostname": "https://example.com/nextcloud/remote.php/dav/files/<login>",
 			"login": "login",
-			"password": "password"
+			"password": "password",
+			"remote_path": "graph_output"
 		}
 	]
 }
