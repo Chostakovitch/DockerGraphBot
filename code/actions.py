@@ -5,6 +5,7 @@ import webdav.client as wc
 import os
 
 from webdav.client import WebDavException
+from typing import List
 
 '''
 This class performs upload to a WebDAV compatible server.
@@ -12,12 +13,12 @@ This class performs upload to a WebDAV compatible server.
 class WebDAVUploader:
     '''
     Build an instance with credentials
-    :param hostname (str): WebDAV link
-    :param login (str): username
-    :param password (str): password of the user
-    :param remote_path (str): remote path where to store the files
+    :param hostname : WebDAV link
+    :param login : username
+    :param password : password of the user
+    :param remote_path : remote path where to store the files
     '''
-    def __init__(self, hostname, login, password, remote_path):
+    def __init__(self, hostname: str, login: str, password: str, remote_path: str):
         options = {
             'webdav_hostname': hostname,
             'webdav_login': login,
@@ -28,9 +29,9 @@ class WebDAVUploader:
 
     '''
     Upload files to the WebDAV server
-    :param files (list): Paths to the files to upload
+    :param files : Paths to the files to upload
     '''
-    def upload(self, files):
+    def upload(self, files: List[str]):
         if not self.__client.check(self.__remote_path):
             self.__client.mkdir(self.__remote_path)
 

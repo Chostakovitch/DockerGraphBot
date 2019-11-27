@@ -6,6 +6,7 @@ import docker
 
 from collections import defaultdict
 from enum import Enum
+from typing import List, Dict
 
 TRAEFIK_DEFAULT_PORT = '80/tcp'
 
@@ -29,7 +30,7 @@ This class represents a Docker container with only useful members
 for GraphBuilder.
 '''
 class ShortContainer:
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name;
         self.image = str()
         self.ports = defaultdict(set)
@@ -75,13 +76,13 @@ class GraphBuilder:
     '''
     Constructor.
 
-    :param docker_client (DockerClient): docker client used to build the graph
-    :param color_scheme (dict): colors used for the graph
-    :param vm_name (str): name of the virtual machine
-    :param vm_label (str): label to put on the virtual machine graph
-    :param exclude (list): name of containers to exclude of the layout
+    :param docker_client : docker client used to build the graph
+    :param color_scheme : colors used for the graph
+    :param vm_name : name of the virtual machine
+    :param vm_label : label to put on the virtual machine graph
+    :param exclude : name of containers to exclude of the layout
     '''
-    def __init__(self, docker_client, color_scheme, vm_label, vm_name, exclude = []):
+    def __init__(self, docker_client: docker.DockerClient, color_scheme: Dict[str, str], vm_label: str, vm_name: str, exclude: List[str] = []):
         self.color_scheme = color_scheme
         self.docker_client = docker_client
         self.vm_label = vm_label
@@ -181,11 +182,11 @@ class GraphBuilder:
     Returns a dictionary than can be unpacked to create a graph element (node, edge or cluster).
     This is a helper function, mainly used because setting the color each time is annoying.
 
-    :param node_type(GraphElement) Which part of the graph do we need to style
+    :param node_type : the part of the graph do we need to style
     :returns Dictionary containing the styling arguments
-    :rtype Dict(str, str)
+    :rtype Dict[str, str]
     '''
-    def __get_style(self, graph_element):
+    def __get_style(self, graph_element: GraphElement):
         if graph_element == GraphElement.TRAEFIK:
             return {
                 'arrowhead': "none",
@@ -234,12 +235,12 @@ class GraphBuilder:
     could be later a subgraph, this function compute a node name given a common non-unique
     name, the vm name, and an optional "subname" in case of record-shaped nodes.
 
-    :param name(str): name of the node
-    :param subname(str): name of the subnode (the one between <> in the record node label)
+    :param name : name of the node
+    :param subname : name of the subnode (the one between <> in the record node label)
     :returns unique name of a node
     :rtype str
     '''
-    def __node_name(self, name, subname = None):
+    def __node_name(self, name: str, subname: str = None):
         name = '{0}_{1}'.format(name, self.vm_name)
         if subname is not None:
             name += ':{0}'.format(subname)
@@ -255,12 +256,12 @@ class GraphBuilder:
     Then, we can address a specific subnode with the syntax global_label:label, global_label
     being the label of the record node and label being the "sublabel" (the one between <>).
 
-    :param name (str): name of the container
-    :param port (List(str)): ports exposed by the container
+    :param name : name of the container
+    :param port : ports exposed by the container
     :returns label usable for the record node
     :rtype str
     '''
-    def __record_label(self, name, ports):
+    def __record_label(self, name: str, ports: List[str]):
         # As the global label will already be unique, no need to use __node_name here
         # Double-bracket = single bracket in format
         label = '{{ <{0}> {0} }}'.format(name, name)

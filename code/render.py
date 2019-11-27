@@ -11,6 +11,7 @@ import docker
 from jsonschema import validate
 from urllib.request import urlopen
 from datetime import datetime
+from typing import List
 
 from build import GraphBuilder
 from actions import WebDAVUploader
@@ -138,9 +139,8 @@ class GraphBot:
                 web_dav.upload(self.__generated_files)
     '''
     Render one or several graphs in PNG format from a list of graphs
-    :param graphs (list): GraphBuilder objects holding the graphs
     '''
-    def __render_graph(self, graphs):
+    def __render_graph(self, graphs: List[GraphBuilder]):
         for builder in graphs:
             if self.config['merge']:
                 self.__graph.subgraph(graph = builder.graph)
