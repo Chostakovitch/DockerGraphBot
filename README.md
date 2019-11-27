@@ -12,7 +12,6 @@
 - [Security considerations](#security-considerations)
 - [Limitations](#limitations)
 - [Contributing](#contributing)
-- [Todo](#todo)
 
 <!-- /TOC -->
 
@@ -68,6 +67,7 @@ You can specify multiple hosts, for example if your infrastructure is made of se
 In either case :
 * `vm` field is used for labels and file naming
 * `host_url` is the public URL of the virtual machine
+* `exclude` is a list of container **names** that you may want to exclude from the diagram
 
 If you want to build a diagram for a remote host, the Docker socket must be reachable through the network. TLS is mandatory here because this is basic security. See [the official documentation](https://docs.docker.com/engine/security/https/) to learn how to expose your Docker socket.
 
@@ -181,7 +181,3 @@ Contributions are very welcomed. I am not a developer, so feel free to give feed
 * `render.py` contains the code needed to put diagrams together and generate images
 * `build.py` contains the code to build diagrams themselves, with DOT python library
 * `actions.py` is the place to put all post generation hooks
-
-## Todo
-
-* Utiliser le type hinting plutôt que ma doc dégueu des fonctions
