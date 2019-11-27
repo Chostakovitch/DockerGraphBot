@@ -15,7 +15,7 @@ from datetime import datetime
 from build import GraphBuilder
 from actions import WebDAVUploader
 
-BASE_PATH = os.environ['DATA_PATH']
+CONFIG_PATH = os.environ['CONFIG_PATH']
 OUTPUT_PATH = os.environ['OUTPUT_PATH']
 
 '''
@@ -80,7 +80,7 @@ class GraphBot:
             ))
         return self.__legend
 
-    def __init__(self, config_path = os.path.join(BASE_PATH, 'config.json')):
+    def __init__(self, config_path = os.path.join(CONFIG_PATH, 'config.json')):
         with open(config_path) as fd:
             self.config = json.load(fd)
 
@@ -176,10 +176,10 @@ class GraphBot:
             else:
                 tls_config = docker.tls.TLSConfig(
                     client_cert = (
-                        os.path.join(BASE_PATH, host['tls_config']['cert']),
-                        os.path.join(BASE_PATH, host['tls_config']['key'])
+                        os.path.join(CONFIG_PATH, host['tls_config']['cert']),
+                        os.path.join(CONFIG_PATH, host['tls_config']['key'])
                     ),
-                    verify = os.path.join(BASE_PATH, host['tls_config']['ca_cert'])
+                    verify = os.path.join(CONFIG_PATH, host['tls_config']['ca_cert'])
                 )
                 docker_client = docker.DockerClient(base_url = '{0}:{1}'.format(host['host_url'], host['port']), tls = tls_config)
                 for result in dns.resolver.query(host['host_url']):
@@ -197,7 +197,7 @@ class GraphBot:
     :rtype str
     '''
     def __check_config(self):
-        with open('schema.json') as schema:
+        with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'schema.json')) as schema:
             try:
                 validate(self.config, json.load(schema))
             except Exception as valid_err:

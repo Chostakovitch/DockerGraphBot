@@ -2,16 +2,16 @@ FROM python:3
 
 LABEL maintainer="quentinduchemin@tuta.io"
 
-COPY requirements.txt ./
-
-RUN pip install --no-cache-dir -r requirements.txt
 RUN apt-get update && \
-    apt-get install -y graphviz && \
+    apt-get install -y graphviz cron && \
     rm -rf /var/cache/apt/archives
 
-COPY ./code/ /code
+COPY entrypoint.sh requirements.txt ./
 
-RUN chmod +x /code/entrypoint.sh
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ./code/ /code
+RUN chmod +x /entrypoint.sh
 WORKDIR /code
 
-ENTRYPOINT [ "/code/entrypoint.sh" ]
+CMD [ "/entrypoint.sh" ]

@@ -1,16 +1,15 @@
-# Graph Bot (WIP)
+# Graph Bot
 
-<!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:0 orderedList:0 -->
+<!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:0 orderedList:0 -->
 
-- [Graph Bot (WIP)](#graph-bot-wip)
-	- [Fonctionnement](#fonctionnement)
-	- [Modes de fonctionnement](#modes-de-fonctionnement)
-	- [Usage](#usage)
-		- [Base](#base)
-		- [TLS](#tls)
-		- [Cas particuliers](#cas-particuliers)
-	- [Sécurité](#scurit)
-	- [Todo](#todo)
+- [Fonctionnement](#fonctionnement)
+- [Modes de fonctionnement](#modes-de-fonctionnement)
+- [Usage](#usage)
+	- [Commun](#commun)
+	- [TLS](#tls)
+	- [Cas particuliers](#cas-particuliers)
+- [Sécurité](#scurit)
+- [Todo](#todo)
 
 <!-- /TOC -->
 
@@ -22,7 +21,7 @@ Les schémas sont constamment obsolètes : nouveaux services, dépréciations...
 
 L'idée est donc d'automatiser la construction de ces schémas, en suivant grossièrement les étapes suivantes :
 
-* Le script interroge périodiquement les machines virtuelles cibles
+* Le script interroge périodiquement les machines virtuelles cibles (`cron`)
 * On interroge le démon Docker pour récupérer les informations intéressantes sur les conteneurs lancés
 * Si Traefik est utilisé comme reverse-proxy, on ajoute le mapping d'URL en tant que lien virtuel entre conteneurs
 * Un graphe au format DOT synthétisant ces informations est créé et une ou des images sont générées
@@ -48,7 +47,7 @@ Les efforts de maintenance et de configuration sont ainsi réduits, puisqu'il n'
 
 ## Usage
 
-### Base
+### Commun
 
 Le `Dockerfile` et le `docker-compose.yml` sont prévus pour fonctionner clé en main. Il faut simplement rédiger la configuration. Exemple ci-dessous :
 
@@ -64,14 +63,17 @@ docker-compose up -d
 docker logs -f graph-bot
 ```
 
-Il est possible d'utiliser un chemin alternatif pour le point de montage de la configuration et du répertoire d'images en modifiant les variables d'environnement `DATA_PATH` et `OUTPUT_PATH` dans `docker-compose.yml`, ainsi que le chemin du volume.
+Docker Compose initialise plusieurs variables d'environnement par défaut que vous pouvez mettre à jour :
+* `CONFIG_PATH` : point de montage de la configuration - défaut : `/config`
+* `OUTPUT_PATH` : point de montage du répertoire d'images générées - défaut : `/output`
+* `CRON_CONFIG` : au format `crontab` - défault : `0 * * * *`, soit toutes les minutes.
 
-Si tout se passe bien, le résultat se trouve dans `./config/output`, au format DOT et au format PNG.
+Une fois générés, les fichiers sont accessibles dans `OUTPUT_PATH` au format PNG et DOT.
 
 * Si `merge` vaut `true`, le fichier sortant porteront les noms `<organization>` et `<organization>.png`
 * Sinon, les noms seront au format `<vm>` et `<vm>.png`.
 
-La légende correspond au(x) fichier(s) généré(s) se trouve dans `./config/output/legend.png`.
+La légende correspond au(x) fichier(s) généré(s) se trouve dans `OUTPUT_PATH/legend.png`.
 
 ### TLS
 
