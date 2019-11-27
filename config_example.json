@@ -3,21 +3,21 @@
 	"merge": true
 	"hosts": [
 		{
-			"vm": "<pica01|pica02|monitoring>",
-			"host_url": "<vm>.picasoft.net",
-			"port": 2376
+			"vm": "<vm1>",
+			"host_url": "<vm1>.tld",
+			"port": 2376,
 			"exclude": [
 				"[container_name]"
 			],
 			"tls_config":
 			{
-				"ca_cert": "/DATA/ca.pem",
-				"cert": "/DATA/cert.pem",
-				"key": "/DATA/key.pem"
+				"ca_cert": "/CONFIG/ca.pem",
+				"cert": "/CONFIG/cert.pem",
+				"key": "/CONFIG/key.pem"
 			}
 		},
 		{
-			"vm": "<pica01|pica02|monitoring>",
+			"vm": "<vm2>",
 			"host": "localhost"
 		}
 	],

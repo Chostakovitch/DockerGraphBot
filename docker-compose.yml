@@ -10,5 +10,10 @@ services:
     environment:
       CONFIG_PATH: '/config'
       OUTPUT_PATH: '/output'
-      CRON_CONFIG: '* * * * *'
+      CRON_CONFIG: '0 0 * * *'
+    networks:
+      - graphbot
     restart: unless-stopped
+
+networks:
+  graphbot:

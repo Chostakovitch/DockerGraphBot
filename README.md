@@ -1,127 +1,187 @@
-# Graph Bot
+# Docker Graph Bot
 
-<!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:0 orderedList:0 -->
+<!-- TOC depthFrom:2 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
-- [Fonctionnement](#fonctionnement)
-- [Modes de fonctionnement](#modes-de-fonctionnement)
+- [Presentation](#presentation)
+- [Configuration](#configuration)
+	- [General parameters](#general-parameters)
+	- [Hosts](#hosts)
+	- [Actions](#actions)
+	- [Color scheme](#color-scheme)
 - [Usage](#usage)
-	- [Commun](#commun)
-	- [TLS](#tls)
-	- [Cas particuliers](#cas-particuliers)
-- [Sécurité](#scurit)
+- [Security considerations](#security-considerations)
+- [Limitations](#limitations)
+- [Contributing](#contributing)
 - [Todo](#todo)
 
 <!-- /TOC -->
 
-## Fonctionnement
+## Presentation
 
-Ce projet vise à automatiser la construction des schémas de l’infrastructure se trouvant sur [cette page](https://wiki.picasoft.net/doku.php?id=infrastructure:architecture_globale).
+Docker Graph bot (DGB) is a Python tool whose goal is to automate the building of diagrams representing a dynamic Docker-based infrastructure. Indeed, if you draw manual diagrams, they will constantly be obsolete.
+This is especially useful :
+* If you want to be transparent to your users
+* If you want to see the "big picture" of your infrastructure
+* To check the coherence of container linking, naming schemes, networks...
 
-Les schémas sont constamment obsolètes : nouveaux services, dépréciations... Ils ont donc une utilité toute relative. De plus, certaines informations sont manquantes, comme les mapping de ports.
+DGB will produce diagrams (graphs) containing the following informations :
+* Running containers, clustered by images
+* Networks
+* Port mappings
+* Links between containers
+* Traefik labels and backend port mappings, **when used**
 
-L'idée est donc d'automatiser la construction de ces schémas, en suivant grossièrement les étapes suivantes :
+Roughly, DGB follows these steps :
 
-* Le script interroge périodiquement les machines virtuelles cibles (`cron`)
-* On interroge le démon Docker pour récupérer les informations intéressantes sur les conteneurs lancés
-* Si Traefik est utilisé comme reverse-proxy, on ajoute le mapping d'URL en tant que lien virtuel entre conteneurs
-* Un graphe au format DOT synthétisant ces informations est créé et une ou des images sont générées
-* Des actions post-génération sont déclenchées, comme l'upload WebDAV.
+* The script periodically runs thanks to a cron job
+* The Docker daemon is queried to retrieve interesting information about the launched containers
+* If Traefik is used as a reverse-proxy, retrieve labels and port mapping to create a virtual link between containers
+* A DOT file summarizing all gathered information is created
+* One or several images are created depending on the configuration
+* Post-generation actions are triggered, such as WebDAV upload.
 
-Enfin, on précise sur le wiki que les schémas sont générés automatiquement.
+No private information should be leaked on the final diagrams. See below for an example diagram generated from one of the [Picasoft](https://picasoft.net) virtual machines.
 
-Tel que conçu, il ne devrait pas y avoir d'informations privées se retrouvant sur les schémas : seulements les conteneurs qui tournent et le cas échéant leur URL publique. Les ports exposés en interne ainsi que les mappings sont également précisés.
+![Example of generated diagram](img/example_pica02.png)
 
-## Modes de fonctionnement
+## Configuration
 
-Comme on peut le voir dans le fichier [config_example.json](./config_example.json), il est possible de spécifier plusieurs hôtes à interroger :
+All the configuration happens in `config/config.json`. You can use [`config.example.json`](./config_example.json) as a base.
 
-* Si un seul hôte est précisé, le graphe final est identique au graphe de l'hôte
-* Si plusieurs hôtes sont précisés, un ou plusieurs graphes sont générés en fonction du paramètre `merge` de la configuration.
+### General parameters
 
-Les hôtes peuvent être locaux ou distants. Cette dernière possibilité nécessite :
-* Un démon Docker distant configuré pour être exposé via TCP et une CA configurée ;
-* Un certificat client, une clé ainsi que le certificat de la CA côté local.
+* `organization` : mainly used for labels and file naming, this is the name of your organization/structure/whatever it is
+* `merge` : a boolean which tells DDB if it should merge the generated diagrams in case you specify multiple hosts
 
-L'avantage d'interroger plusieurs hôtes à distance est d'exécuter le script à un seul endroit et de centraliser les résultats.
-Les efforts de maintenance et de configuration sont ainsi réduits, puisqu'il n'y a plus qu'un seul conteneur `graph-bot`.
+Example :
+
+```json
+{
+	"organization": "Picasoft",
+	"merge": true
+}
+```
+### Hosts
+
+You can specify multiple hosts, for example if your infrastructure is made of several virtual machines.
+
+In either case :
+* `vm` field is used for labels and file naming
+* `host_url` is the public URL of the virtual machine
+
+If you want to build a diagram for a remote host, the Docker socket must be reachable through the network. TLS is mandatory here because this is basic security. See [the official documentation](https://docs.docker.com/engine/security/https/) to learn how to expose your Docker socket.
+
+Once you have your CA, server and client key, just fill the `ca_cert`, `cert` and `key` field with paths **relative** to your `<CONFIG_PATH>` folder (see [Usage](#usage)). Don't forget to specify the Docker socket port.
+
+The main advantage to use multiple hosts is that it reduces the burden of maintaining an instance of DGB on each virtual machine. With only one instance, you can build, generate and upload all your diagrams at once.
+
+Example with a remote host and a local host :
+```json
+"hosts": [
+	{
+		"vm": "<vm1>",
+		"host_url": "<vm1>.tld",
+		"port": 2376,
+		"exclude": [
+			"[container_name]"
+		],
+		"tls_config":
+		{
+			"ca_cert": "/CONFIG/ca.pem",
+			"cert": "/CONFIG/cert.pem",
+			"key": "/CONFIG/key.pem"
+		}
+	},
+	{
+		"vm": "<vm2>",
+		"host": "localhost"
+	}
+],
+```
+### Actions
+
+Actions are like post generation hooks. Each configured action is applied to DOT or PNG generated files.
+
+For now, there is only one available action which will upload all generated PNG diagrams to a WebDAV compatible server (*e.g.* NextCloud). Note that `remote_path` is just a relative path to the "home" directory of the WebDAV user.
+
+Example with a NextCloud server :
+
+```json
+"actions": [
+	{
+		"type": "webdav",
+		"hostname": "https://example.com/nextcloud/remote.php/dav/files/<login>",
+		"login": "login",
+		"password": "password",
+		"remote_path": "graph_output"
+	}
+]
+```
+### Color scheme
+
+This is pretty self-explanatory. Just use hexadecimal values to control the look-and-feel of your diagrams.
 
 ## Usage
 
-### Commun
-
-Le `Dockerfile` et le `docker-compose.yml` sont prévus pour fonctionner clé en main. Il faut simplement rédiger la configuration. Exemple ci-dessous :
+DGB is distributed as a Docker image and is ready for use. You just need to provide a valid configuration file and TLS needed files if necessary.
+See an example setup below :
 
 ```bash
-git clone https://gitlab.utc.fr/picasoft/projets/graph-bot.git
-cd graph-bot
-docker build -t graph-bot .
-# On peut utiliser autre chose que config, mais il faut modifier docker-compose.yml
-mkdir config output
-# Attention : config.json doit au minimum avoir o=r comme permission
-mv config_example.json config/config.json
-docker-compose up -d
-docker logs -f graph-bot
+$ git clone https://gitlab.utc.fr/picasoft/projets/graph-bot.git
+$ cd graph-bot
+$ docker build -t graph-bot .
+$ # These are the bind-mounted directories. If you change their names, change bind-mounts !.
+$ mkdir config output
+$ mv config_example.json config/config.json
+$ docker-compose up -d
+$ docker logs -f graph-bot
+# And voilà !
 ```
 
-Docker Compose initialise plusieurs variables d'environnement par défaut que vous pouvez mettre à jour :
-* `CONFIG_PATH` : point de montage de la configuration - défaut : `/config`
-* `OUTPUT_PATH` : point de montage du répertoire d'images générées - défaut : `/output`
-* `CRON_CONFIG` : au format `crontab` - défault : `0 * * * *`, soit toutes les minutes.
+Docker Compose sets default environment variables that you can override at your convenience :
+* `CONFIG_PATH` : mount point of the configuration directory
+* `OUTPUT_PATH` : mount point of the output directory
+* `CRON_CONFIG` : cron setting (*e.g.* `0 0 * * *` for every day at midnight)
 
-Une fois générés, les fichiers sont accessibles dans `OUTPUT_PATH` au format PNG et DOT.
-
-* Si `merge` vaut `true`, le fichier sortant porteront les noms `<organization>` et `<organization>.png`
-* Sinon, les noms seront au format `<vm>` et `<vm>.png`.
-
-La légende correspond au(x) fichier(s) généré(s) se trouve dans `OUTPUT_PATH/legend.png`.
-
-### TLS
-
-Si on interroge des hôtes à distance, il faut rajouter de la configuration supplémentaire. Pour chaque hôte distant, on ajoutera dans `config.json` :
-
-```json
-"tls_config":
-{
-	"ca_cert": "auth/pica01/ca.pem",
-	"cert": "auth/pica01/cert.pem",
-	"key": "auth/pica01/key.pem"
-}
+If you don't want to use Docker Compose, you can still use the following Docker commands :
+```bash
+$ docker network create graphbot
+$ docker run -d --name graph-bot \
+	--volume "$(pwd)config:/config" --volume "$(pwd)/output:/output" --volume "/var/run/docker.sock:/var/run/docker.sock"
+	-e CONFIG_PATH='/config' -e OUTPUT_PATH='/output' -e CRON_CONFIG='0 0 * * *'
+	--restart unless-stopped --net graphbot graph-bot
 ```
 
-Avec :
-* `ca_cert` : certificat de la CA de l'hôte distant
-* `cert` : certificat du client
-* `key`  : clé du client
+Each time DGB is runned, `OUTPUT_PATH` will be updated with new DOT and PNG files.
+If `merge` is `true`, filenames will use `organization` field, `vm` otherwise.
 
-Les chemins sont donnés relativement à `DATA_PATH`. Dans l'exemple ci-dessus, les certificats seront donc montés dans `/config/auth/<vm>/*.pem`.
+DGB also generates a legend with the corresponding color scheme, it can be found at `OUTPUT_PATH/legend.png`.
 
-### Cas particuliers
+## Security considerations
 
-Si les hôtes ainsi que les conteneurs sont nombreux, il est possible que le graphe final généré par défaut soit très large.
-GraphViz n'est pas prévu pour aligner verticalement les sous-graphes, ou clusters.
+DGB is launched as `root`, especially because private keys will probably we own by `root` on the host with permissions `600` (and they **should be**).
 
-À cet effet, il est possible de passer le paramètre `merge` à `false` afin de générer un graphe par hôte.
+Also, the Docker socket is mounted inside the container so that DGB can query the running containers. Mounting the Docker socket is equivalent to :
+* Allowing any modification of all containers, images, volumes...
+* Giving a `root` access **to the host** itself ! (with little tricks)
 
-Le nom du graphe généré aura le format `<vm>.png`.
+As a consequence, it is mandatory to keep DGB in an isolated Docker network, without exposed port (I cannot see a reason to do so).
+Also, when you use remote host, you also give a `root` access to these hosts to DGB. You must ensure that each person than can access your DGB instance (*i.e.* in `docker` group on the host running DGB) has a `root` or equivalent access on all hosts, otherwise you expose yourself to privilege escalation.
 
-## Sécurité
+## Limitations
 
-Le conteneur est lancé en tant qu'utilisateur privilégié. En effet, les clés privées appartiendront très probablement à `root` sur l'hôte, en `600`, et il est souhaitable qu'elles le restent.
+If you run a lot of containers across multiple hosts, the final diagrams may be unreadable. Indeed, GraphViz is not made to manage vertically aligned clusters and the final diagram will be too wide. If so, you may want to set `merge` to `false` and generate a single diagram per host.
 
-Aussi, le socket Docker est monté à l'intérieur du conteneur ; il leake l'ensemble des informations associées à tous les conteneurs et permet de modifier leur état sans restrictions.
-**Pire, monter le socket Docker est équivalent à donner un accès `root` sur l'hôte.**
+Also, containers in multiple networks will be improperly rendered as if they belong to a single network.
 
-Il est donc **obligatoire** de le laisser dans un réseau Docker isolé et sans ports exposés (il n'y a aucune raison que ce soit le cas!).
-De plus, si les hôtes sont distants, l'accès s'étend aux machines distantes car le conteneur a alors accès aux sockets des clients.
+## Contributing
 
-Je répète : avoir accès au conteneur `graph-bot` est équivalent à obtenir un accès `root` sur l'hôte ainsi que sur toutes les machines distantes concernées.
+Contributions are very welcomed. I am not a developer, so feel free to give feedback, improve the code or develop new features.
 
-Il est donc **fondamental** que les personnes ayant accès à la machine sur laquelle s'exécute `graph-bot` **et** faisant partie du groupe `docker` aient accès à l'ensemble des hôtes configurés, sans quoi ces personnes pourraient escalader leurs privilèges. Autrement dit, il est préférable que `graph-bot` s'exécute sur la machine la plus restreinte de l'infrastructure.
+* `render.py` contains the code needed to put diagrams together and generate images
+* `build.py` contains the code to build diagrams themselves, with DOT python library
+* `actions.py` is the place to put all post generation hooks
 
 ## Todo
 
-* Ré-écrire le README
-* Traduction anglais/français
 * Utiliser le type hinting plutôt que ma doc dégueu des fonctions
-* Configuration d'un cron
-* Ajout doc développeur
