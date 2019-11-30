@@ -40,6 +40,14 @@
 			"login": "login",
 			"password": "password",
 			"remote_path": "graph_output"
+		},
+		{
+			"type": "stfp",
+			"hostname": "sftp.tld",
+			"port": 2222,
+			"login": "login",
+			"password": "password",
+			"remote_path": "graph_output"
 		}
 	]
 }

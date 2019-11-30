@@ -4,3 +4,4 @@ ruamel.yaml>=0.15.94
 jsonschema>=3.0
 dnspython>=1.15
 webdavclient>=1.0.8
+paramiko

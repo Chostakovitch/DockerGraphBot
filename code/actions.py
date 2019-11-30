@@ -3,6 +3,7 @@
 
 import webdav.client as wc
 import os
+import paramiko
 
 from webdav.client import WebDavException
 from typing import List
@@ -29,7 +30,7 @@ class WebDAVUploader:
 
     '''
     Upload files to the WebDAV server
-    :param files : Paths to the files to upload
+    :param files: Paths to the files to upload
     '''
     def upload(self, files: List[str]):
         if not self.__client.check(self.__remote_path):
@@ -41,4 +42,49 @@ class WebDAVUploader:
                 self.__client.upload_sync(remote_path = '{}/{}'.format(self.__remote_path, filename), local_path = f)
                 print("File {} successfully uploaded!".format(filename))
             except WebDavException as e:
-                print("Error uploading file : {}".format(e))
+                print("Error uploading file {0} : {1}".format(f, e))
+
+'''
+This class performs uploads to a SFTP server.
+Currently only connection via user/password is supported.
+'''
+class SFTPUploader:
+    '''
+    Build an instance with credentials
+    :param hostname public URL
+    :param port:       SFTP port
+    :param login:      username
+    :param password:   cleartext password
+    :param base_path:  directory for uploads - will be created if it does not exist
+    '''
+    def __init__(self, hostname: str, port:int, login: str, password: str, base_path:str = ''):
+        self.__dir = base_path
+
+        transport = paramiko.Transport((hostname, port))
+        transport.connect(None, login, password)
+        try:
+            self.__client = paramiko.SFTPClient.from_transport(transport)
+        except Exception as e:
+            print("Error creating SFTP client : {}".format(e))
+
+        try:
+            self.__client.listdir(base_path)
+            print("Folder already existing, skipping creation...")
+        except FileNotFoundError:
+            self.__client.mkdir(base_path)
+
+    '''
+    Upload files to the STFP server
+    :param files: Paths to the files to upload
+    '''
+    def upload(self, files: List[str]):
+        for f in files:
+            filename = os.path.basename(f)
+            try:
+                self.__client.put(f, '{}/{}'.format(self.__dir, filename))
+                print("File {} successfully uploaded!".format(filename))
+            except Exception as e:
+                print('Error uploading file {0} : {1}'.format(f, e))
+
+    def __del__(self):
+        self.__client.close()

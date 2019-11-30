@@ -37,7 +37,7 @@ Roughly, DGB follows these steps :
 * If Traefik is used as a reverse-proxy, retrieve labels and port mapping to create a virtual link between containers
 * A DOT file summarizing all gathered information is created
 * One or several images are created depending on the configuration
-* Post-generation actions are triggered, such as WebDAV upload.
+* Post-generation actions are triggered, such as WebDAV/SFTP upload.
 
 No private information should be leaked on the final diagrams. See below for an example diagram generated from one of the [Picasoft](https://picasoft.net) virtual machines.
 
@@ -102,9 +102,11 @@ Example with a remote host and a local host :
 
 Actions are like post generation hooks. Each configured action is applied to DOT or PNG generated files.
 
-For now, there is only one available action which will upload all generated PNG diagrams to a WebDAV compatible server (*e.g.* NextCloud). Note that `remote_path` is just a relative path to the "home" directory of the WebDAV user.
+For now, there is only two available actions : upload all generated PNG diagrams to
+* A WebDAV compatible server (*e.g.* NextCloud).
+* A SFTP server
 
-Example with a NextCloud server :
+Examples
 
 ```json
 "actions": [
@@ -114,9 +116,20 @@ Example with a NextCloud server :
 		"login": "login",
 		"password": "password",
 		"remote_path": "graph_output"
+	},
+	{
+		"type": "sftp",
+		"hostname": "https://sftp.tld",
+		"port": 2222,
+		"login": "login",
+		"password": "password",
+		"remote_path": "graph_output"
 	}
 ]
 ```
+
+Note that `remote_path` is just a relative path to the "home" directory of the WebDAV user or the SFTP user.
+
 ### Color scheme
 
 This is pretty self-explanatory. Just use hexadecimal values to control the look-and-feel of your diagrams.

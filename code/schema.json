@@ -64,17 +64,24 @@
           "properties": { "type": { "const": "webdav" } }
         },
         "then": {
-          "required": [ "hostname", "login", "password" ]
+          "required": [ "hostname", "login", "password", "remote_path" ]
+        },
+        "if": {
+          "properties": { "type": { "const": "sftp" } }
+        },
+        "then": {
+          "required": [ "hostname", "port", "login", "password", "remote_path" ]
         },
         "properties": {
           "type": {
             "type": "string",
-            "pattern": "webdav"
+            "pattern": "webdav|sftp"
           },
           "hostname": { "type": "string" },
           "login": { "type": "string" },
           "password": { "type": "string" },
-          "remote_path": { "type": "string" }
+          "remote_path": { "type": "string" },
+          "port": { "type": "integer" }
         }
       }
     }

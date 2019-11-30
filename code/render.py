@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import List
 
 from build import GraphBuilder
-from actions import WebDAVUploader
+from actions import WebDAVUploader, SFTPUploader
 
 CONFIG_PATH = os.environ['CONFIG_PATH']
 OUTPUT_PATH = os.environ['OUTPUT_PATH']
@@ -137,6 +137,9 @@ class GraphBot:
             if a['type'] == 'webdav':
                 web_dav = WebDAVUploader(a['hostname'], a['login'], a['password'], a['remote_path'])
                 web_dav.upload(self.__generated_files)
+            elif a['type'] == 'sftp':
+                sftp_client = SFTPUploader(a['hostname'], a['port'], a['login'], a['password'], a['remote_path'])
+                sftp_client.upload(self.__generated_files)
     '''
     Render one or several graphs in PNG format from a list of graphs
     '''
