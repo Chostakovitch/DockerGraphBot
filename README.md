@@ -41,7 +41,7 @@ Roughly, DGB follows these steps :
 
 No private information should be leaked on the final diagrams. See below for an example diagram generated from one of the [Picasoft](https://picasoft.net) virtual machines.
 
-![Example of generated diagram](img/example_pica02.png)
+![Example of generated diagram](https://gitlab.utc.fr/picasoft/projets/graph-bot/raw/master/img/example_pica02.png)
 
 ## Configuration
 
