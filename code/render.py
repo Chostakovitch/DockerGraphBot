@@ -172,7 +172,7 @@ class GraphBot:
             vm_name = host['vm'] + ' | '
             if host['host_url'] == 'localhost':
                 docker_client = docker.from_env()
-                vm_name += urlopen('http://ip.42.pl/raw').read().decode("utf-8")
+                vm_name += urlopen('https://wtfismyip.com/text').read().decode("utf-8").replace('\n', '')
             else:
                 tls_config = docker.tls.TLSConfig(
                     client_cert = (
