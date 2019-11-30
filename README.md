@@ -137,30 +137,48 @@ This is pretty self-explanatory. Just use hexadecimal values to control the look
 ## Usage
 
 DGB is distributed as a Docker image and is ready for use. You just need to provide a valid configuration file and TLS needed files if necessary.
-See an example setup below :
+
+You can pull the latest stable version from [the Docker Hub](https://hub.docker.com/r/chosto/graphbot) :
+
+``` bash
+$ docker pull chosto/graphbot:v1.1
+```
+
+Or build the image from the repository :
 
 ```bash
 $ git clone https://gitlab.utc.fr/picasoft/projets/graph-bot.git
 $ cd graph-bot
-$ docker build -t graph-bot .
+$ docker build -t chosto/graph-bot .
+```
+
+Then, create required directories :
+
+```bash
 $ # These are the bind-mounted directories. If you change their names, change bind-mounts !.
 $ mkdir config output
 $ mv config_example.json config/config.json
+```
+
+Those are the environment variables that you can override at your convenience :
+* `CONFIG_PATH` : mount point of the configuration directory
+* `OUTPUT_PATH` : mount point of the output directory
+* `CRON_CONFIG` : cron setting (*e.g.* `0 0 * * *` for every day at midnight)
+
+If you want to use Docker Compose (recommended), use the one provided in this repository and tune the environment variables in the file :
+
+```bash
 $ docker-compose up -d
 $ docker logs -f graph-bot
 # And voilà !
 ```
 
-Docker Compose sets default environment variables that you can override at your convenience :
-* `CONFIG_PATH` : mount point of the configuration directory
-* `OUTPUT_PATH` : mount point of the output directory
-* `CRON_CONFIG` : cron setting (*e.g.* `0 0 * * *` for every day at midnight)
-
 If you don't want to use Docker Compose, you can still use the following Docker commands :
+
 ```bash
 $ docker network create graphbot
 $ docker run -d --name graph-bot \
-	--volume "$(pwd)config:/config" --volume "$(pwd)/output:/output" --volume "/var/run/docker.sock:/var/run/docker.sock"
+	--volume "$(pwd)/config:/config" --volume "$(pwd)/output:/output" --volume "/var/run/docker.sock:/var/run/docker.sock"
 	-e CONFIG_PATH='/config' -e OUTPUT_PATH='/output' -e CRON_CONFIG='0 0 * * *'
 	--restart unless-stopped --net graphbot graph-bot
 ```
