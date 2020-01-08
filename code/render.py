@@ -188,9 +188,13 @@ class GraphBot:
                 for result in dns.resolver.query(host['host_url']):
                     vm_name += '{}'.format(result.address)
             vm_name += ' | Generated date : {} '.format(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-            builder = GraphBuilder(docker_client, self.config['color_scheme'], vm_name, host['vm'], host.get('exclude', []))
-            print('{} built.'.format(builder.graph.name))
-            graphs.append(builder)
+            try:
+                docker_client.ping()
+                builder = GraphBuilder(docker_client, self.config['color_scheme'], vm_name, host['vm'], host.get('exclude', []))
+                print('{} built.'.format(builder.graph.name))
+                graphs.append(builder)
+            except docker.errors.APIErro as e:
+                print('Docker at {} is not responsive. Skipping graph generation. Details: {}'.format(host['host_url'], e))
 
         return graphs
 
