@@ -7,6 +7,7 @@ import socket
 import os
 import graphviz
 import docker
+import sys
 
 from jsonschema import validate
 from urllib.request import urlopen
@@ -193,8 +194,8 @@ class GraphBot:
                 builder = GraphBuilder(docker_client, self.config['color_scheme'], vm_name, host['vm'], host.get('exclude', []))
                 print('{} built.'.format(builder.graph.name))
                 graphs.append(builder)
-            except docker.errors.APIErro as e:
-                print('Docker at {} is not responsive. Skipping graph generation. Details: {}'.format(host['host_url'], e))
+            except Exception as e:
+                print('Docker at {} is not responsive. Skipping graph generation. Details: {}'.format(host['host_url'], e), file=sys.stderr)
 
         return graphs
 

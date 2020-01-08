@@ -4,6 +4,7 @@
 import webdav.client as wc
 import os
 import paramiko
+import sys
 
 from webdav.client import WebDavException
 from typing import List
@@ -42,7 +43,7 @@ class WebDAVUploader:
                 self.__client.upload_sync(remote_path = '{}/{}'.format(self.__remote_path, filename), local_path = f)
                 print("File {} successfully uploaded!".format(filename))
             except WebDavException as e:
-                print("Error uploading file {0} : {1}".format(f, e))
+                print("Error uploading file {0} : {1}".format(f, e), file=sys.stderr)
 
 '''
 This class performs uploads to a SFTP server.
@@ -84,7 +85,7 @@ class SFTPUploader:
                 self.__client.put(f, '{}/{}'.format(self.__dir, filename))
                 print("File {} successfully uploaded!".format(filename))
             except Exception as e:
-                print('Error uploading file {0} : {1}'.format(f, e))
+                print('Error uploading file {0} : {1}'.format(f, e), file=sys.stderr)
 
     def __del__(self):
         self.__client.close()
