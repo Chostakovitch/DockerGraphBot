@@ -70,6 +70,14 @@ class GraphBot:
                     <TD ALIGN="LEFT">Virtual machine</TD>
                     <TD BORDER="1" WIDTH="100" BGCOLOR="{7}"></TD>
                 </TR>
+                <TR>
+                    <TD ALIGN="LEFT">Docker Volume</TD>
+                    <TD BORDER="1" WIDTH="100" BGCOLOR="{8}"></TD>
+                </TR>
+                <TR>
+                    <TD ALIGN="LEFT">Bind Mount</TD>
+                    <TD BORDER="1" WIDTH="100" BGCOLOR="{9}"></TD>
+                </TR>
             </TABLE>>'''.format(
                 self.config['organization'],
                 self.config['color_scheme']['traefik'],
@@ -78,7 +86,9 @@ class GraphBot:
                 self.config['color_scheme']['image'],
                 self.config['color_scheme']['container'],
                 self.config['color_scheme']['network'],
-                self.config['color_scheme']['vm']
+                self.config['color_scheme']['vm'],
+                self.config['color_scheme']['volume'],
+                self.config['color_scheme']['bind_mount']
             ))
         return self.__legend
 

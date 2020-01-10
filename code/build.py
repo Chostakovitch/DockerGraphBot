@@ -24,6 +24,8 @@ class GraphElement(Enum):
     CONTAINER = 'Concrete instance of an image'
     NETWORK = 'Cluster around containers of the same Docker network'
     VM = 'Virtual machine (host)'
+    VOLUME = 'Docker volume'
+    BIND_MOUNT = 'Directory mounted in a container'
 
 '''
 This class represents a Docker container with only useful members
@@ -226,6 +228,18 @@ class GraphBuilder:
             return {
                 'style': 'filled,rounded',
                 'fillcolor': self.color_scheme['vm']
+            }
+        elif graph_element == GraphElement.VOLUME:
+            return {
+                'style': 'filled,rounded',
+                'color': self.color_scheme['volume'],
+                'fillcolor': self.color_scheme['volume']
+            }
+        elif graph_element == GraphElement.BIND_MOUNT:
+            return {
+                'style': 'filled,rounded',
+                'color': self.color_scheme['bind_mount'],
+                'fillcolor': self.color_scheme['bind_mount']
             }
         else:
             raise Exception('Unkown graph element')

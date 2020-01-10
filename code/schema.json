@@ -41,7 +41,7 @@
     },
     "color_scheme": {
       "type": "object",
-      "required": [ "traefik", "port", "link", "image", "container", "network", "vm", "dark_text", "bright_text" ],
+      "required": [ "traefik", "port", "link", "image", "container", "network", "vm", "volume", "bind_mount", "dark_text", "bright_text" ],
       "properties": {
         "traefik": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "port": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
@@ -49,6 +49,8 @@
         "image": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "container": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "network": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "volume": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "bind_mount": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "vm": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "dark_text": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "bright_text": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" }

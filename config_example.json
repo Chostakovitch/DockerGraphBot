@@ -29,6 +29,8 @@
 		"image": "#e1efe6",
 		"container": "#ffffff",
 		"network": "#ffffff",
+		"volume": "#819cd9",
+		"bind_mount": "#b19cd9",
 		"vm": "#e1efe6",
 		"dark_text": "#32384f",
 		"bright_text": "#ffffff"
