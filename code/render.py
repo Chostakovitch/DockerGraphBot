@@ -80,15 +80,15 @@ class GraphBot:
                 </TR>
             </TABLE>>'''.format(
                 self.config['organization'],
-                self.config['color_scheme']['traefik'],
-                self.config['color_scheme']['port'],
-                self.config['color_scheme']['link'],
-                self.config['color_scheme']['image'],
-                self.config['color_scheme']['container'],
-                self.config['color_scheme']['network'],
-                self.config['color_scheme']['vm'],
-                self.config['color_scheme']['volume'],
-                self.config['color_scheme']['bind_mount']
+                self.config['color_scheme'].get('traefik', '#edb591'),
+                self.config['color_scheme'].get('port', '#86c49b'),
+                self.config['color_scheme'].get('link', '#75e9cd'),
+                self.config['color_scheme'].get('image', '#e1efe6'),
+                self.config['color_scheme'].get('container', '#ffffff'),
+                self.config['color_scheme'].get('network', '#ffffff'),
+                self.config['color_scheme'].get('vm', '#e1efe6'),
+                self.config['color_scheme'].get('volume', '#819cd9'),
+                self.config['color_scheme'].get('bind_mount', '#b19cd9')
             ))
         return self.__legend
 
@@ -118,7 +118,7 @@ class GraphBot:
             # Allow edges between clusters (important for our invisible edges between subgraphs)
             'compound': 'true',
             # Defaut text/border color
-            'fontcolor': self.config['color_scheme']['dark_text']
+            'fontcolor': self.config['color_scheme'].get('dark_text', '#32384f')
         }
         node_attr = {
             # All nodes are colorfull and with rounded borders
