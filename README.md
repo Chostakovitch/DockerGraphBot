@@ -141,7 +141,7 @@ DGB is distributed as a Docker image and is ready for use. You just need to prov
 You can pull the latest stable version from [the Docker Hub](https://hub.docker.com/r/chosto/graphbot) :
 
 ``` bash
-$ docker pull chosto/graphbot:v1.1
+$ docker pull chosto/graphbot
 ```
 
 Or build the image from the repository :
@@ -161,9 +161,9 @@ $ mv config_example.json config/config.json
 ```
 
 Those are the environment variables that you can override at your convenience :
-* `CONFIG_PATH` : mount point of the configuration directory
-* `OUTPUT_PATH` : mount point of the output directory
-* `CRON_CONFIG` : cron setting (*e.g.* `0 0 * * *` for every day at midnight)
+* `CONFIG_PATH` : mount point of the configuration volume
+* `OUTPUT_PATH` : mount point of the output volume
+* *Optional* : `CRON_CONFIG` : cron setting (*e.g.* `0 0 * * *` for every day at midnight). If you don't provide it, DGB will execute once and stop.
 
 If you want to use Docker Compose (recommended), use the one provided in this repository and tune the environment variables in the file :
 
