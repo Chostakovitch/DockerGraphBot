@@ -4,7 +4,7 @@
   "description": "This file is used to validate GraphBot configuration.",
   "type": "object",
   "required": [
-    "organization", "merge", "hosts", "color_scheme", "actions"
+    "organization", "merge", "hosts", "color_scheme"
   ],
   "properties": {
     "hosts": {

@@ -143,7 +143,7 @@ class GraphBot:
     Perform eventuals actions after rendering the files
     '''
     def __post_actions(self):
-        for a in self.config['actions']:
+        for a in self.config.get('actions', []):
             # Upload generated PNG
             if a['type'] == 'webdav':
                 web_dav = WebDAVUploader(a['hostname'], a['login'], a['password'], a['remote_path'])
