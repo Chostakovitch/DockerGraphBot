@@ -203,7 +203,7 @@ Also, when you use remote host, you also give a `root` access to these hosts to 
 
 If you run a lot of containers across multiple hosts, the final diagrams may be unreadable. Indeed, GraphViz is not made to manage vertically aligned clusters and the final diagram will be too wide. If so, you may want to set `merge` to `false` and generate a single diagram per host.
 
-Also, containers in multiple networks will be improperly rendered as if they belong to a single network.
+Also, as the graph is distributed per-network, if a host belongs to more than one network, it will be rendered on a single network only.
 
 ## Contributing
 

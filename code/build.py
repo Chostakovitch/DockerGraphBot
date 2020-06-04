@@ -2,6 +2,7 @@
 # coding=utf-8
 
 import docker
+import logging
 
 from graphviz import Digraph
 from collections import defaultdict
@@ -40,7 +41,7 @@ class ContainerInfos:
         self.name = name
         self.image = str()
         self.ports = defaultdict(set)
-        self.networks = set()
+        self.network = str()
         self.links = set()
         self.bind_mounts = set()
         self.volumes = defaultdict(set)
@@ -148,11 +149,11 @@ class GraphBuilder:
         # Group containers by networks
         network_dict = defaultdict(list)
         for cont in running:
-            for net in cont.networks:
-                network_dict[net].append(cont)
+            network_dict[cont.network].append(cont)
 
         # Create a subgraph for each network
         for network, containers in network_dict.items():
+            print(network, containers)
             network_subgraph = Digraph(
                 name='cluster_{0}'.format(self.__node_name(network))
             )
@@ -317,6 +318,8 @@ class GraphBuilder:
     node name given a common non-unique name, the vm name, and
     an optional "subname" in case of record-shaped nodes.
 
+    This is reasonable because a container name must be unique on a host.
+
     :param name : name of the node
     :param subname : name of the subnode (between <> in the record node label)
     :returns unique name of a node
@@ -402,7 +405,7 @@ class GraphBuilder:
                         cont_info.backend_port = TRAEFIK_PORT
 
                 for network_name, params in networks_conf['Networks'].items():
-                    cont_info.networks.add(network_name)
+                    cont_info.network = network_name
                     links = params['Links']
                     if links is not None:
                         # The part before : is the link name (i.e. the
@@ -410,7 +413,11 @@ class GraphBuilder:
                         cont_info.links.update(
                             [link.split(':')[0] for link in links]
                         )
-
+                if len(network_name) > 1:
+                    warn = 'Container {} belongs to more than one ' \
+                              'network, it won''t be properly rendered. ' \
+                              'We will only consider network {}.'
+                    logging.warning(warn.format(cont.name, cont_info.network))
                 running_containers.append(cont_info)
 
             # Check if a Traefik container is running
