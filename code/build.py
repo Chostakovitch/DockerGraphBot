@@ -129,7 +129,10 @@ class GraphBuilder:
                 label='Virtual machine : {}'.format(self.vm_label),
                 **self.__get_style(GraphElement.VM)
             )
-
+            if self.has_traefik:
+                info = 'Will use port {} as source for mapping between ' \
+                       'Traefik and containers for VM {}.'
+                logging.info(info.format(self.vm_name, TRAEFIK_PORT))
             self.__add_containers_by_network(vm, running)
             self.__add_edges_between_containers(running)
             self.__add_host_port_mapping(running)
@@ -153,7 +156,6 @@ class GraphBuilder:
 
         # Create a subgraph for each network
         for network, containers in network_dict.items():
-            print(network, containers)
             network_subgraph = Digraph(
                 name='cluster_{0}'.format(self.__node_name(network))
             )
@@ -381,6 +383,14 @@ class GraphBuilder:
                 cont_info = ContainerInfos(cont.name)
                 # Use the first image as the main name
                 cont_info.image = cont.image.tags[0]
+                if(len(cont.image.tags) > 1):
+                    warn = 'Multiple image tags for container {} ' \
+                           'of host {}, choosing image {}.'
+                    logging.warning(warn.format(
+                        cont.name,
+                        self.vm_label,
+                        cont_info.image)
+                    )
 
                 networks_conf = cont.attrs['NetworkSettings']
                 # Sometimes several host ports could be mapped on a
@@ -403,6 +413,14 @@ class GraphBuilder:
                         cont_info.backend_port = backend_port
                     else:
                         cont_info.backend_port = TRAEFIK_PORT
+                        warn = 'Traefik host rule found but no backend port ' \
+                               'found for container {} of host {} : ' \
+                               'suppose {} port.'
+                        logging.warning(warn.format(
+                            cont_info.name,
+                            self.vm_label,
+                            TRAEFIK_PORT)
+                        )
 
                 for network_name, params in networks_conf['Networks'].items():
                     cont_info.network = network_name
@@ -414,10 +432,14 @@ class GraphBuilder:
                             [link.split(':')[0] for link in links]
                         )
                 if len(network_name) > 1:
-                    warn = 'Container {} belongs to more than one ' \
-                              'network, it won''t be properly rendered. ' \
-                              'We will only consider network {}.'
-                    logging.warning(warn.format(cont.name, cont_info.network))
+                    warn = 'Container {} of host {} belongs to more ' \
+                              'than one network, it won''t be properly ' \
+                              'rendered. We will only consider network {}.'
+                    logging.warning(warn.format(
+                        cont.name,
+                        self.vm_name,
+                        cont_info.network)
+                    )
                 running_containers.append(cont_info)
 
             # Check if a Traefik container is running
@@ -425,6 +447,7 @@ class GraphBuilder:
             # port mapping in the graph
             for image in cont.image.tags:
                 if 'traefik' == image.split(':')[0]:
+
                     self.has_traefik = True
                     self.traefik = cont.name
 

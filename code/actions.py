@@ -39,6 +39,7 @@ class WebDAVUploader:
     :param files: Paths to the files to upload
     '''
     def upload(self, files: List[str]):
+        logging.info('Starting upload of {}'.format(files))
         # Create remote folder if it does not exists
         if not self.__client.check(self.__remote_path):
             self.__client.mkdir(self.__remote_path)
@@ -49,9 +50,11 @@ class WebDAVUploader:
                 self.__client.upload_sync(
                     remote_path='{}/{}'.format(self.__remote_path, filename),
                     local_path=file)
-                print("File {} successfully uploaded!".format(filename))
+                logging.info("File {} successfully uploaded!".format(filename))
             except WebDavException as e:
-                print("Error uploading file {0} : {1}".format(f, e), file=sys.stderr)
+                logging.error('Error uploading file {}'.format(file))
+                logging.exception(e)
+        logging.info('Finished upload')
 
 
 class SFTPUploader:
@@ -80,12 +83,17 @@ class SFTPUploader:
         try:
             self.__client = paramiko.SFTPClient.from_transport(transport)
         except Exception as e:
-            print("Error creating SFTP client : {}".format(e))
+            logging.error("Error creating SFTP client for {}".format(hostname))
+            logging.exception(e)
 
         # Create the directory if it does not exists
         try:
             self.__client.listdir(base_path)
-            print("Folder already existing, skipping creation...")
+            info = "Folder {} already existing on {}, skipping creation..."
+            logging.info(info.format(
+                hostname,
+                base_path
+            ))
         except FileNotFoundError:
             self.__client.mkdir(base_path)
 
@@ -94,13 +102,16 @@ class SFTPUploader:
     :param files: Paths of files to upload
     '''
     def upload(self, files: List[str]):
-        for f in files:
-            filename = os.path.basename(f)
+        logging.info('Starting upload of {}'.format(files))
+        for file in files:
+            filename = os.path.basename(file)
             try:
-                self.__client.put(f, '{}/{}'.format(self.__dir, filename))
-                print("File {} successfully uploaded!".format(filename))
+                self.__client.put(file, '{}/{}'.format(self.__dir, filename))
+                logging.info("File {} successfully uploaded!".format(filename))
             except Exception as e:
-                print('Error uploading file {0} : {1}'.format(f, e), file=sys.stderr)
+                logging.error('Error uploading file {}'.format(file))
+                logging.exception(e)
+        logging.info('Finished upload')
 
     def __del__(self):
         self.__client.close()

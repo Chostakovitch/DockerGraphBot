@@ -107,7 +107,9 @@ class GraphBot:
         for host in self.config['hosts']:
             try:
                 graphs[host['vm']] = self.__build_subgraph(host)
-                print('Graph for {} successfully built'.format(host['vm']))
+                logging.info('Graph for {} successfully built'.format(
+                    host['vm'])
+                )
             except docker.errors.APIError as e:
                 logging.error('Error when communicating with {}, skipping.'
                               .format(host['vm']))
@@ -163,12 +165,12 @@ class GraphBot:
             path = os.path.join(OUTPUT_PATH, self.config['organization'])
             self.__graph.render(path)
             self.__generated_files.append('{}.png'.format(path))
-            print("Global rendering is successful !")
+            logging.info("Global rendering is successful !")
 
         legend_path = os.path.join(OUTPUT_PATH, 'legend')
         self.__generated_files.append('{}.png'.format(legend_path))
         self.legend.render(legend_path)
-        print("Legend rendering is successful !")
+        logging.info("Legend rendering is successful !")
 
     '''
     Query a specific host and return its built graph
