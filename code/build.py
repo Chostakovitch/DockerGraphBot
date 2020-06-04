@@ -130,7 +130,7 @@ class GraphBuilder:
             )
 
             self.__add_containers_by_network(vm, running)
-            self.__add_links_between_containers(running)
+            self.__add_edges_between_containers(running)
             self.__add_host_port_mapping(running)
 
     '''
@@ -177,8 +177,8 @@ class GraphBuilder:
                     **self.__get_style(GraphElement.CONTAINER)
                 )
                 # The URL of the container, if managed by Traefik, is
-                # represented by a node rather than by a link label
-                # to avoid ugly large link labels
+                # represented by a node rather than by a edge label
+                # to avoid ugly large edge labels
                 if self.has_traefik and cont.url is not None:
                     network_subgraph.node(
                         name=self.__node_name(cont.url),
@@ -191,7 +191,7 @@ class GraphBuilder:
             parent.subgraph(network_subgraph)
 
     '''
-    Create all the links between the running containers :
+    Create all the edges between the running containers :
     - Docker links
     - Traefik proxying (port mapping and backend routing)
 
@@ -199,7 +199,7 @@ class GraphBuilder:
     this function, as it will properly set labels. If you don't call
     this function, the graph will render properly but without explicit labels.
     '''
-    def __add_links_between_containers(self, running: List[ContainerInfos]):
+    def __add_edges_between_containers(self, running: List[ContainerInfos]):
         for cont in running:
             if self.has_traefik and cont.url is not None:
                 # Edge from traefik default port to URL node
@@ -215,7 +215,7 @@ class GraphBuilder:
                     **self.__get_style(GraphElement.TRAEFIK)
                 )
 
-            # Add links between containers
+            # Add one edge for each link between containers
             for link in cont.links:
                 vm.edge(
                     tail_name=self.__node_name(c.name, c.name),

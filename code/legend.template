@@ -1,0 +1,41 @@
+<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="10" CELLPADDING="4">
+  <TR>
+    <TD COLSPAN="2"><B>Legend of {0} architecture</B></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="LEFT">Traefik "Host" label</TD>
+    <TD BORDER="1" WIDTH="100" BGCOLOR="{1}"></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="LEFT">Host port</TD>
+    <TD BORDER="1" WIDTH="100" BGCOLOR="{2}"></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="LEFT">Docker link</TD>
+    <TD BORDER="1" WIDTH="100" BGCOLOR="{3}"></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="LEFT">Image</TD>
+    <TD BORDER="1" WIDTH="100" BGCOLOR="{4}"></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="LEFT">Container, exposed ports</TD>
+    <TD BORDER="1" WIDTH="100" BGCOLOR="{5}"></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="LEFT">Docker network</TD>
+    <TD BORDER="1" WIDTH="100" BGCOLOR="{6}"></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="LEFT">Virtual machine</TD>
+    <TD BORDER="1" WIDTH="100" BGCOLOR="{7}"></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="LEFT">Docker Volume</TD>
+    <TD BORDER="1" WIDTH="100" BGCOLOR="{8}"></TD>
+  </TR>
+  <TR>
+    <TD ALIGN="LEFT">Bind Mount</TD>
+    <TD BORDER="1" WIDTH="100" BGCOLOR="{9}"></TD>
+  </TR>
+</TABLE>>
