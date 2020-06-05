@@ -26,16 +26,15 @@ This is especially useful :
 DGB will produce diagrams (graphs) containing the following informations :
 * Running containers, clustered by images
 * Networks
-* Port mappings
+* Port mappings between host and containers
 * Links between containers
 * Traefik labels and backend port mappings, **when used**
 
 Roughly, DGB follows these steps :
 
-* The script periodically runs thanks to a cron job
-* The Docker daemon is queried to retrieve interesting information about the launched containers
-* If Traefik is used as a reverse-proxy, retrieve labels and port mapping to create a virtual link between containers
-* A DOT file summarizing all gathered information is created
+* Query the Docker daemon to retrieve interesting information about the launched containers
+* If Traefik is used as a reverse-proxy, retrieve labels and port mapping to create virtual link between containers
+* A DOT file summarizing all gathered information is built
 * One or several images are created depending on the configuration
 * Post-generation actions are triggered, such as WebDAV/SFTP upload.
 
@@ -50,14 +49,14 @@ All the configuration happens in `config/config.json`. You can use [`config.exam
 ### General parameters
 
 * `organization` : mainly used for labels and file naming, this is the name of your organization/structure/whatever it is
-* `merge` : a boolean which tells DDB if it should merge the generated diagrams in case you specify multiple hosts
+* `merge` : a boolean which tells DGB if it should merge the generated diagrams in case you specify multiple hosts
 
 Example :
 
 ```json
 {
-	"organization": "Picasoft",
-	"merge": true
+  "organization": "Picasoft",
+  "merge": true
 }
 ```
 ### Hosts
@@ -65,8 +64,8 @@ Example :
 You can specify multiple hosts, for example if your infrastructure is made of several virtual machines.
 
 In either case :
-* `vm` field is used for labels and file naming
-* `host_url` is the public URL of the virtual machine
+* `name` field is used for labels and file naming
+* `url` is the URL of the host, either local or public
 * `exclude` is a list of container **names** that you may want to exclude from the diagram
 
 If you want to build a diagram for a remote host, the Docker socket must be reachable through the network. TLS is mandatory here because this is basic security. See [the official documentation](https://docs.docker.com/engine/security/https/) to learn how to expose your Docker socket.
@@ -78,25 +77,24 @@ The main advantage to use multiple hosts is that it reduces the burden of mainta
 Example with a remote host and a local host :
 ```json
 "hosts": [
-	{
-		"vm": "<vm1>",
-		"host_url": "<vm1>.tld",
-		"port": 2376,
-		"exclude": [
-			"[container_name]"
-		],
-		"tls_config":
-		{
-			"ca_cert": "/CONFIG/ca.pem",
-			"cert": "/CONFIG/cert.pem",
-			"key": "/CONFIG/key.pem"
-		}
-	},
-	{
-		"vm": "<vm2>",
-		"host": "localhost"
-	}
-],
+  {
+    "name": "<hostname>",
+    "url": "<host>.tld",
+    "port": 2376,
+    "exclude": [
+      "[container_name]"
+    ],
+    "tls_config": {
+      "ca_cert": "/CONFIG/ca.pem",
+      "cert": "/CONFIG/cert.pem",
+      "key": "/CONFIG/key.pem"
+    }
+  },
+  {
+    "name": "<hostname>",
+    "url": "localhost"
+  }
+]
 ```
 ### Actions
 
@@ -110,21 +108,21 @@ Examples
 
 ```json
 "actions": [
-	{
-		"type": "webdav",
-		"hostname": "https://example.com/nextcloud/remote.php/dav/files/<login>",
-		"login": "login",
-		"password": "password",
-		"remote_path": "graph_output"
-	},
-	{
-		"type": "sftp",
-		"hostname": "https://sftp.tld",
-		"port": 2222,
-		"login": "login",
-		"password": "password",
-		"remote_path": "graph_output"
-	}
+  {
+    "type": "webdav",
+    "hostname": "https://example.com/nextcloud/remote.php/dav/files/<login>",
+    "login": "login",
+    "password": "password",
+    "remote_path": "graph_output"
+  },
+  {
+    "type": "sftp",
+    "hostname": "https://sftp.tld",
+    "port": 2222,
+    "login": "login",
+    "password": "password",
+    "remote_path": "graph_output"
+  }
 ]
 ```
 
@@ -186,7 +184,7 @@ $ docker run -d --name graph-bot \
 Each time DGB is runned, `OUTPUT_PATH` will be updated with new DOT and PNG files.
 If `merge` is `true`, filenames will use `organization` field, `vm` otherwise.
 
-DGB also generates a legend with the corresponding color scheme, it can be found at `OUTPUT_PATH/legend.png`.
+DGB also generates a legend with the corresponding color scheme, it can be found at `OUTPUT_PATH/legend.dot.png`.
 
 ## Security considerations
 

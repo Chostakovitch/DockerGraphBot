@@ -1,55 +1,51 @@
 {
-	"organization": "Picasoft",
-	"merge": true
-	"hosts": [
-		{
-			"vm": "<vm1>",
-			"host_url": "<vm1>.tld",
-			"port": 2376,
-			"exclude": [
-				"[container_name]"
-			],
-			"tls_config":
-			{
-				"ca_cert": "/CONFIG/ca.pem",
-				"cert": "/CONFIG/cert.pem",
-				"key": "/CONFIG/key.pem"
-			}
-		},
-		{
-			"vm": "<vm2>",
-			"host": "localhost"
-		}
-	],
-	"color_scheme":
-	{
-		"traefik": "#edb591",
-		"port": "#86c49b",
-		"link": "#75e9cd",
-		"image": "#e1efe6",
-		"container": "#ffffff",
-		"network": "#ffffff",
-		"volume": "#819cd9",
-		"bind_mount": "#b19cd9",
-		"vm": "#e1efe6",
-		"dark_text": "#32384f",
-		"bright_text": "#ffffff"
-	},
-	"actions": [
-		{
-			"type": "webdav",
-			"hostname": "https://example.com/nextcloud/remote.php/dav/files/<login>",
-			"login": "login",
-			"password": "password",
-			"remote_path": "graph_output"
-		},
-		{
-			"type": "stfp",
-			"hostname": "sftp.tld",
-			"port": 2222,
-			"login": "login",
-			"password": "password",
-			"remote_path": "graph_output"
-		}
-	]
+  "organization": "Picasoft",
+  "merge": true,
+  "hosts": [{
+      "name": "<host1>",
+      "url": "<host1>.tld",
+      "port": 2376,
+      "exclude": [
+        "<container_name>"
+      ],
+      "tls_config": {
+        "ca_cert": "/CONFIG/ca.pem",
+        "cert": "/CONFIG/cert.pem",
+        "key": "/CONFIG/key.pem"
+      }
+    },
+    {
+      "name": "<host2>",
+      "url": "localhost"
+    }
+  ],
+  "color_scheme": {
+    "traefik": "#edb591",
+    "port": "#86c49b",
+    "link": "#75e9cd",
+    "image": "#e1efe6",
+    "container": "#ffffff",
+    "network": "#ffffff",
+    "volume": "#819cd9",
+    "bind_mount": "#b19cd9",
+    "vm": "#e1efe6",
+    "dark_text": "#32384f",
+    "bright_text": "#ffffff"
+  },
+  "actions": [{
+      "type": "webdav",
+      "hostname": "https://example.com/nextcloud/remote.php/dav/files/<login>",
+      "login": "login",
+      "password": "password",
+      "remote_path": "graph_output"
+    },
+    {
+      "type": "stfp",
+      "hostname": "sftp.tld",
+      "port": 2222,
+      "login": "login",
+      "password": "password",
+      "remote_path": "graph_output"
+    }
+  ]
 }

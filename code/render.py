@@ -96,7 +96,7 @@ class GraphBot:
         }
         graph_name = '{} architecture'.format(self.config['organization'])
         self.__graph = Digraph(
-            name=graph_name,
+            name=graph_name + '.dot',
             comment=graph_name,
             graph_attr=graph_attr,
             node_attr=node_attr,
@@ -106,13 +106,13 @@ class GraphBot:
         graphs = {}
         for host in self.config['hosts']:
             try:
-                graphs[host['vm']] = self.__build_subgraph(host)
+                graphs[host['name']] = self.__build_subgraph(host)
                 logging.info('Graph for {} successfully built'.format(
-                    host['vm'])
+                    host['name'])
                 )
             except docker.errors.APIError as e:
                 logging.error('Error when communicating with {}, skipping.'
-                              .format(host['vm']))
+                              .format(host['name']))
                 logging.exception(e)
             except Exception as e:
                 logging.error('Unknown error while building graph.')
@@ -157,7 +157,7 @@ class GraphBot:
             # and render it immediately
             else:
                 self.__graph.body = graph.body
-                path = os.path.join(OUTPUT_PATH, vm_name)
+                path = os.path.join(OUTPUT_PATH, vm_name + '.dot')
                 self.__graph.render(path)
                 self.__generated_files.append('{}.png'.format(path))
 
@@ -167,7 +167,7 @@ class GraphBot:
             self.__generated_files.append('{}.png'.format(path))
             logging.info("Global rendering is successful !")
 
-        legend_path = os.path.join(OUTPUT_PATH, 'legend')
+        legend_path = os.path.join(OUTPUT_PATH, 'legend.dot')
         self.__generated_files.append('{}.png'.format(legend_path))
         self.legend.render(legend_path)
         logging.info("Legend rendering is successful !")
@@ -178,8 +178,8 @@ class GraphBot:
     :rtype Digraph
     '''
     def __build_subgraph(self, host: Dict[str, Dict]):
-        vm_name = host['vm'] + ' | '
-        if host['host_url'] == 'localhost':
+        vm_name = host['name'] + ' | '
+        if host['url'] == 'localhost':
             docker_client = docker.from_env()
             # Do not use private IP
             vm_name += \
@@ -197,11 +197,11 @@ class GraphBot:
                 verify=ca_p
             )
             docker_client = docker.DockerClient(
-                base_url='{0}:{1}'.format(host['host_url'], host['port']),
+                base_url='{0}:{1}'.format(host['url'], host['port']),
                 tls=tls_config
             )
             # Not building for localhost, get public IP from DNS servers
-            for result in dns.resolver.query(host['host_url']):
+            for result in dns.resolver.query(host['url']):
                 vm_name += '{}'.format(result.address)
 
         # Build a nice name, with hostname, public IP and generated date
@@ -216,7 +216,7 @@ class GraphBot:
             docker_client,
             self.config['color_scheme'],
             vm_name,
-            host['vm'],
+            host['name'],
             host.get('exclude', [])
         )
         return builder.graph
@@ -236,7 +236,7 @@ class GraphBot:
         # Ensure that there is not duplicate hostnames
         # as the name of nodes, which must be unique
         # is based on this property
-        hosts = [host['vm'] for host in self.config['hosts']]
+        hosts = [host['name'] for host in self.config['hosts']]
         unique_hosts = set(hosts)
         if len(hosts) != len(unique_hosts):
             raise Exception('Two hosts cannot have the same name')

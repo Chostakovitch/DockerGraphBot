@@ -12,17 +12,17 @@
       "items": {
         "type": "object",
         "if": {
-          "properties": { "host_url": { "const": "localhost" } }
+          "properties": { "url": { "const": "localhost" } }
         },
         "then": {
-          "required": [ "vm", "host_url" ]
+          "required": [ "name", "url" ]
         },
         "else": {
-          "required": [ "vm", "host_url", "port", "tls_config" ]
+          "required": [ "name", "url", "port", "tls_config" ]
         },
         "properties": {
-          "vm": { "type": "string" },
-          "host_url": { "type": "string" },
+          "name": { "type": "string" },
+          "url": { "type": "string" },
           "port": { "type": "integer" },
           "exclude": {
             "type": "array",
@@ -50,7 +50,7 @@
         "network": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "volume": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "bind_mount": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
-        "vm": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
+        "host": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "dark_text": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" },
         "bright_text": { "type": "string", "pattern": "^#[a-zA-Z0-9]{6}$" }
       }
