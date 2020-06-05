@@ -70,7 +70,7 @@ In either case :
 
 If you want to build a diagram for a remote host, the Docker socket must be reachable through the network. TLS is mandatory here because this is basic security. See [the official documentation](https://docs.docker.com/engine/security/https/) to learn how to expose your Docker socket.
 
-Once you have your CA, server and client key, just fill the `ca_cert`, `cert` and `key` field with paths **relative** to your `<CONFIG_PATH>` folder (see [Usage](#usage)). Don't forget to specify the Docker socket port.
+Once you have your CA, server and client key, just fill the `ca_cert`, `cert` and `key` field with paths **relative** to your `CERTS_DIRECTORY` folder (see [Usage](#usage)). Don't forget to specify the Docker socket port.
 
 The main advantage to use multiple hosts is that it reduces the burden of maintaining an instance of DGB on each virtual machine. With only one instance, you can build, generate and upload all your diagrams at once.
 
@@ -134,6 +134,8 @@ This is pretty self-explanatory. Just use hexadecimal values to control the look
 
 ## Usage
 
+### Docker Image
+
 DGB is distributed as a Docker image and is ready for use. You just need to provide a valid configuration file and TLS needed files if necessary.
 
 You can pull the latest stable version from [the Docker Hub](https://hub.docker.com/r/chosto/graphbot) :
@@ -159,11 +161,12 @@ $ mv config_example.json config/config.json
 ```
 
 Those are the environment variables that you can override at your convenience :
-* `CONFIG_PATH` : mount point of the configuration volume
-* `OUTPUT_PATH` : mount point of the output volume
+* `CONFIG_FILE` : mount point of the configuration file
+* *Optional* : `CERTS_DIRECTORY` : mount point of the certificates directory (if you use TLS to connect to a remote Docker instance)
+* *Optional* : `OUTPUT_DIRECTORY` : mount point of the output volume (if you want to keep track of the diagrams)
 * *Optional* : `CRON_CONFIG` : cron setting (*e.g.* `0 0 * * *` for every day at midnight). If you don't provide it, DGB will execute once and stop.
 
-If you want to use Docker Compose (recommended), use the one provided in this repository and tune the environment variables in the file :
+If you want to use Docker Compose (recommended), use the one provided in this repository and tune the environment variables in the file to match the host mount points :
 
 ```bash
 $ docker-compose up -d
@@ -171,21 +174,37 @@ $ docker logs -f graph-bot
 # And voilà !
 ```
 
-If you don't want to use Docker Compose, you can still use the following Docker commands :
+If you don't want to use Docker Compose, you can still use the following Docker commands, by adjusting the host paths and removing non-relevant environment variables.
 
 ```bash
 $ docker network create graphbot
 $ docker run -d --name graph-bot \
-	--volume "$(pwd)/config:/config" --volume "$(pwd)/output:/output" --volume "/var/run/docker.sock:/var/run/docker.sock"
-	-e CONFIG_PATH='/config' -e OUTPUT_PATH='/output' -e CRON_CONFIG='0 0 * * *'
+	--volume "$(pwd)/config.json:/config.json" --volume "$(pwd)/output:/output" --volume "/var/run/docker.sock:/var/run/docker.sock"
+	--volume "$(pwd)/certs:/certs"
+	-e CONFIG_FILE='/config.json' -e OUTPUT_DIRECTORY='/output' -e CERTS_DIRECTORY='/certs' -e CRON_CONFIG='0 0 * * *'
 	--restart unless-stopped --net graphbot graph-bot
 ```
 
-Each time DGB is runned, `OUTPUT_PATH` will be updated with new DOT and PNG files.
-If `merge` is `true`, filenames will use `organization` field, `vm` otherwise.
+### Standalone
 
-DGB also generates a legend with the corresponding color scheme, it can be found at `OUTPUT_PATH/legend.dot.png`.
+You can also use the Python code without the Docker image, which is provided for convenience and cron jobs.
+Make sure to run **Python 3.8** or higher.
+Just hit :
 
+```bash
+$ python3 -m pip install -r requirements.txt
+$ ./code/dgb.py --help
+usage: dgb.py [-h] [-o OUTPUT_DIRECTORY] [-c CONFIG_FILE] [-t CERTS_DIRECTORY]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTPUT_DIRECTORY, --output-directory OUTPUT_DIRECTORY
+                        path for output directory of DOT and PNG files
+  -c CONFIG_FILE, --config-file CONFIG_FILE
+                        path of the configuration file
+  -t CERTS_DIRECTORY, --certs-directory CERTS_DIRECTORY
+                        path of the directory container certificates
+```
 ## Security considerations
 
 DGB is launched as `root`, especially because private keys will probably we own by `root` on the host with permissions `600` (and they **should be**).
@@ -207,6 +226,7 @@ Also, as the graph is distributed per-network, if a host belongs to more than on
 
 Contributions are very welcomed. I am not a developer, so feel free to give feedback, improve the code or develop new features.
 
+* `dgb.py` contains the entrypoint of DGB
 * `render.py` contains the code needed to put diagrams together and generate images
 * `build.py` contains the code to build diagrams themselves, with DOT python library
 * `actions.py` is the place to put all post generation hooks

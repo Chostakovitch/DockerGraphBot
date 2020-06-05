@@ -4,13 +4,15 @@ services:
     image: "chosto/graphbot"
     container_name: "graph-bot"
     volumes:
-      - "./config:/config"
+      - "./config.json:/config.json"
+      - "./certs:/certs"
       - "./output:/output"
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
-      CONFIG_PATH: '/config'
-      OUTPUT_PATH: '/output'
-      CRON_CONFIG: '* * * * *'
+      CONFIG_FILE: '/config.json'
+      OUTPUT_DIRECTORY: '/output'
+      CERTS_DIRECTORY: '/certs'
+      #CRON_CONFIG: '* * * * *'
     networks:
       - graphbot
     restart: unless-stopped

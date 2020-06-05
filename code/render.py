@@ -19,9 +19,6 @@ from typing import List, Dict
 from build import GraphBuilder
 from actions import WebDAVUploader, SFTPUploader
 
-CONFIG_PATH = os.environ['CONFIG_PATH']
-OUTPUT_PATH = os.environ['OUTPUT_PATH']
-
 
 class GraphBot:
     '''
@@ -59,15 +56,22 @@ class GraphBot:
                 ))
         return self.__legend
 
-    def __init__(self, config_path=os.path.join(CONFIG_PATH, 'config.json')):
-        with open(config_path) as fd:
-            self.config = json.load(fd)
+    def __init__(self, config_file, output_path, certs_path):
+        try:
+            with open(config_file) as fd:
+                self.config = json.load(fd)
+        except Exception as e:
+            logging.error('Failed to read configuration, exiting...')
+            logging.exception(e)
+            sys.exit(1)
 
         # Validate configuration
         self.__check_config()
 
         self.__graph = None
         self.__legend = None
+        self.__output_path = output_path
+        self.__certs_path = certs_path
         self.__generated_files = []
 
     '''
@@ -157,17 +161,17 @@ class GraphBot:
             # and render it immediately
             else:
                 self.__graph.body = graph.body
-                path = os.path.join(OUTPUT_PATH, vm_name + '.dot')
+                path = os.path.join(self.__output_path, vm_name + '.dot')
                 self.__graph.render(path)
                 self.__generated_files.append('{}.png'.format(path))
 
         if self.config['merge']:
-            path = os.path.join(OUTPUT_PATH, self.config['organization'])
+            path = os.path.join(self.__output_path, self.config['organization'])
             self.__graph.render(path)
             self.__generated_files.append('{}.png'.format(path))
             logging.info("Global rendering is successful !")
 
-        legend_path = os.path.join(OUTPUT_PATH, 'legend.dot')
+        legend_path = os.path.join(self.__output_path, 'legend.dot')
         self.__generated_files.append('{}.png'.format(legend_path))
         self.legend.render(legend_path)
         logging.info("Legend rendering is successful !")
@@ -189,9 +193,9 @@ class GraphBot:
                 .replace('\n', '')
         else:
             # Build configuration to securely exchange with Docker socket
-            cert_p = os.path.join(CONFIG_PATH, host['tls_config']['cert'])
-            key_p = os.path.join(CONFIG_PATH, host['tls_config']['key'])
-            ca_p = os.path.join(CONFIG_PATH, host['tls_config']['ca_cert'])
+            cert_p = os.path.join(self.__certs_path, host['tls_config']['cert'])
+            key_p = os.path.join(self.__certs_path, host['tls_config']['key'])
+            ca_p = os.path.join(self.__certs_path, host['tls_config']['ca_cert'])
             tls_config = docker.tls.TLSConfig(
                 client_cert=(cert_p, key_p),
                 verify=ca_p
