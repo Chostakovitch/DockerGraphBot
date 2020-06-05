@@ -61,7 +61,7 @@ Example :
 ```
 ### Hosts
 
-You can specify multiple hosts, for example if your infrastructure is made of several virtual machines.
+You can specify multiple hosts, for example if your infrastructure is made of several hosts.
 
 In either case :
 * `name` field is used for labels and file naming
@@ -72,7 +72,7 @@ If you want to build a diagram for a remote host, the Docker socket must be reac
 
 Once you have your CA, server and client key, just fill the `ca_cert`, `cert` and `key` field with paths **relative** to your `CERTS_DIRECTORY` folder (see [Usage](#usage)). Don't forget to specify the Docker socket port.
 
-The main advantage to use multiple hosts is that it reduces the burden of maintaining an instance of DGB on each virtual machine. With only one instance, you can build, generate and upload all your diagrams at once.
+The main advantage to use multiple hosts is that it reduces the burden of maintaining an instance of DGB on each host. With only one instance, you can build, generate and upload all your diagrams at once.
 
 Example with a remote host and a local host :
 ```json

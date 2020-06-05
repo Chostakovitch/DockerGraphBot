@@ -27,7 +27,7 @@
     <TD BORDER="1" WIDTH="100" BGCOLOR="{6}"></TD>
   </TR>
   <TR>
-    <TD ALIGN="LEFT">Virtual machine</TD>
+    <TD ALIGN="LEFT">Host</TD>
     <TD BORDER="1" WIDTH="100" BGCOLOR="{7}"></TD>
   </TR>
   <TR>

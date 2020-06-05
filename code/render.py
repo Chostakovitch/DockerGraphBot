@@ -1,84 +1,89 @@
 #!/usr/bin/env python
 # coding=utf-8
+"""Logic to render DOT graphs representing a complete infrastructure in PNG."""
 
-import dns.resolver
 import json
-import socket
 import os
-import docker
-import sys
-
 import logging
 
-from graphviz import Digraph
-from jsonschema import validate
 from urllib.request import urlopen
 from datetime import datetime
-from typing import List, Dict
+from typing import Any, Dict, Optional
+
+import docker
+import dns.resolver
+import jsonschema
+from jsonschema.exceptions import ValidationError, SchemaError
+from graphviz import Digraph
 
 from build import GraphBuilder
 from actions import WebDAVUploader, SFTPUploader
 
 
 class GraphBot:
-    '''
-    This class creates a graph per machine given in the configuration
-    and then combines those graphs to create a "big-picture" graph.
-    '''
+    """
+    Create a PNG graph for each machine given in the configuration.
+
+    Merge all graphs is requested in configuration ("big-picture").
+    """
+
     @property
-    def graph(self):
+    def graph(self) -> Digraph:
+        """Build the final graph if not built yet, and return it."""
         if self.__graph is None:
             self.build()
         return self.__graph
 
     @property
-    def legend(self):
-        if self.__legend is None:
-            self.__legend = Digraph(
-                name='legend',
-                node_attr={'style': 'rounded', 'shape': 'plain'},
-                format='png')
-            # Categories of nodes and edges are fixed, we just
-            # need to update colors if they are customized
-            with open(self.__get_real_path('legend.template')) as legend:
-                template = legend.read()
-                self.__legend.node('legend', template.format(
-                    self.config['organization'],
-                    self.config['color_scheme'].get('traefik', '#edb591'),
-                    self.config['color_scheme'].get('port', '#86c49b'),
-                    self.config['color_scheme'].get('link', '#75e9cd'),
-                    self.config['color_scheme'].get('image', '#e1efe6'),
-                    self.config['color_scheme'].get('container', '#ffffff'),
-                    self.config['color_scheme'].get('network', '#ffffff'),
-                    self.config['color_scheme'].get('vm', '#e1efe6'),
-                    self.config['color_scheme'].get('volume', '#819cd9'),
-                    self.config['color_scheme'].get('bind_mount', '#b19cd9')
-                ))
-        return self.__legend
+    def legend(self) -> Digraph:
+        """Build the graph for legend from template and return it."""
+        legend = Digraph(
+            name='legend',
+            node_attr={'style': 'rounded', 'shape': 'plain'},
+            format='png')
+        # Categories of nodes and edges are fixed, we just
+        # need to update colors if they are customized
+        with open(self.__get_real_path('legend.template')) as legend:
+            template = legend.read()
+            legend.node('legend', template.format(
+                self.config['organization'],
+                self.config['color_scheme'].get('traefik', '#edb591'),
+                self.config['color_scheme'].get('port', '#86c49b'),
+                self.config['color_scheme'].get('link', '#75e9cd'),
+                self.config['color_scheme'].get('image', '#e1efe6'),
+                self.config['color_scheme'].get('container', '#ffffff'),
+                self.config['color_scheme'].get('network', '#ffffff'),
+                self.config['color_scheme'].get('host', '#e1efe6'),
+                self.config['color_scheme'].get('volume', '#819cd9'),
+                self.config['color_scheme'].get('bind_mount', '#b19cd9')
+            ))
+        return legend
 
     def __init__(self, config_file, output_path, certs_path):
+        """Initialize GraphBot. Read configuration from file."""
         try:
             with open(config_file) as fd:
                 self.config = json.load(fd)
-        except Exception as e:
-            logging.error('Failed to read configuration, exiting...')
-            logging.exception(e)
-            sys.exit(1)
+        except (OSError, IOError, json.JSONDecodeError) as e:
+            logging.error('Failed to read configuration.')
+            raise e
 
         # Validate configuration
         self.__check_config()
 
         self.__graph = None
-        self.__legend = None
         self.__output_path = output_path
         self.__certs_path = certs_path
         self.__generated_files = []
 
-    '''
-    Builds a Digraph object representing the architecture of all hosts
-    and store the final graph in __graph.
-    '''
     def build(self):
+        """
+        Build a Digraph object representing the architecture of all hosts.
+
+        The final graph is accessible with the graph property if merge is
+        true in the configuration, otherwise you just get the last built
+        graph.
+        """
         font_color = self.config['color_scheme'].get('dark_text', '#32384f')
         graph_attr = {
             # Draw straight lines
@@ -98,9 +103,9 @@ class GraphBot:
             # Allow sub-nodes
             'shape': 'record'
         }
-        graph_name = '{} architecture'.format(self.config['organization'])
+        graph_name = f"{self.config['organization']} architecture"
         self.__graph = Digraph(
-            name=graph_name + '.dot',
+            name=graph_name,
             comment=graph_name,
             graph_attr=graph_attr,
             node_attr=node_attr,
@@ -111,12 +116,10 @@ class GraphBot:
         for host in self.config['hosts']:
             try:
                 graphs[host['name']] = self.__build_subgraph(host)
-                logging.info('Graph for {} successfully built'.format(
-                    host['name'])
-                )
+                logging.info('Graph for %s successfully built', host['name'])
             except docker.errors.APIError as e:
-                logging.error('Error when communicating with {}, skipping.'
-                              .format(host['name']))
+                logging.error('Error when communicating with %s, skipping.',
+                              host['name'])
                 logging.exception(e)
             except Exception as e:
                 logging.error('Unknown error while building graph.')
@@ -124,10 +127,36 @@ class GraphBot:
         self.__render_graph(graphs)
         self.__post_actions()
 
-    '''
-    Perform eventuals actions after rendering the files
-    '''
+    def __render_graph(self, graphs: Dict[str, Digraph]):
+        """Render one or several graphs in PNG format from a list of graphs."""
+        for host_name, graph in graphs.items():
+            # If we are asked to make a big picture, just
+            # add each graph as a subgraph
+            if self.config['merge']:
+                self.__graph.subgraph(graph=graph)
+            # Otherwise, replace old graph with new graph
+            # and render it immediately
+            else:
+                self.__graph.body = graph.body
+                path = os.path.join(self.__output_path, f'{host_name}.dot')
+                self.__graph.render(path)
+                self.__generated_files.append(f'{path}.png')
+
+        if self.config['merge']:
+            path = os.path.join(
+                self.__output_path,
+                f"{self.config['organization']}.dot")
+            self.__graph.render(path)
+            self.__generated_files.append(f'{path}.png')
+            logging.info("Global rendering is successful !")
+
+        legend_path = os.path.join(self.__output_path, 'legend.dot')
+        self.__generated_files.append(f'{legend_path}.png')
+        self.legend.render(legend_path)
+        logging.info("Legend rendering is successful !")
+
     def __post_actions(self):
+        """Perform eventuals actions after rendering the files."""
         for action in self.config.get('actions', []):
             # Upload generated PNG
             if action['type'] == 'webdav':
@@ -148,70 +177,42 @@ class GraphBot:
                 )
                 sftp_client.upload(self.__generated_files)
 
-    '''
-    Render one or several graphs in PNG format from a list of graphs
-    '''
-    def __render_graph(self, graphs: Dict[str, Digraph]):
-        for vm_name, graph in graphs.items():
-            # If we are asked to make a big picture, just
-            # add each graph as a subgraph
-            if self.config['merge']:
-                self.__graph.subgraph(graph=graph)
-            # Otherwise, replace old graph with new graph
-            # and render it immediately
-            else:
-                self.__graph.body = graph.body
-                path = os.path.join(self.__output_path, vm_name + '.dot')
-                self.__graph.render(path)
-                self.__generated_files.append('{}.png'.format(path))
-
-        if self.config['merge']:
-            path = os.path.join(self.__output_path, self.config['organization'])
-            self.__graph.render(path)
-            self.__generated_files.append('{}.png'.format(path))
-            logging.info("Global rendering is successful !")
-
-        legend_path = os.path.join(self.__output_path, 'legend.dot')
-        self.__generated_files.append('{}.png'.format(legend_path))
-        self.legend.render(legend_path)
-        logging.info("Legend rendering is successful !")
-
-    '''
-    Query a specific host and return its built graph
-    :returns Graph of host
-    :rtype Digraph
-    '''
-    def __build_subgraph(self, host: Dict[str, Dict]):
-        vm_name = host['name'] + ' | '
+    def __build_subgraph(self, host: Dict[str, Any]) -> Digraph:
+        """Query a specific host and return its built graph."""
+        host_name = f"{host['name']} ("
         if host['url'] == 'localhost':
             docker_client = docker.from_env()
             # Do not use private IP
-            vm_name += \
+            host_name += \
                 urlopen('https://wtfismyip.com/text') \
                 .read() \
                 .decode("utf-8") \
                 .replace('\n', '')
         else:
             # Build configuration to securely exchange with Docker socket
-            cert_p = os.path.join(self.__certs_path, host['tls_config']['cert'])
-            key_p = os.path.join(self.__certs_path, host['tls_config']['key'])
-            ca_p = os.path.join(self.__certs_path, host['tls_config']['ca_cert'])
+            cert_p = os.path.join(
+                self.__certs_path,
+                host['tls_config']['cert'])
+            key_p = os.path.join(
+                self.__certs_path,
+                host['tls_config']['key'])
+            ca_p = os.path.join(
+                self.__certs_path,
+                host['tls_config']['ca_cert'])
             tls_config = docker.tls.TLSConfig(
                 client_cert=(cert_p, key_p),
                 verify=ca_p
             )
             docker_client = docker.DockerClient(
-                base_url='{0}:{1}'.format(host['url'], host['port']),
+                base_url=f"{host['url']}:{host['port']}",
                 tls=tls_config
             )
             # Not building for localhost, get public IP from DNS servers
             for result in dns.resolver.query(host['url']):
-                vm_name += '{}'.format(result.address)
+                host_name += f'{result.address}'
 
         # Build a nice name, with hostname, public IP and generated date
-        vm_name += ' | Generated date : {} '.format(
-            datetime.now().strftime("%d/%m/%Y %H:%M")
-        )
+        host_name += f') at {datetime.now().strftime("%d/%m/%Y %H:%M")}'
 
         # Check if the Docker daemon is accessible with current params
         # If yes, starting graph building process
@@ -219,23 +220,21 @@ class GraphBot:
         builder = GraphBuilder(
             docker_client,
             self.config['color_scheme'],
-            vm_name,
+            host_name,
             host['name'],
             host.get('exclude', [])
         )
         return builder.graph
 
-    '''
-    Perform syntaxic and logic__get_real_path checks of the configuration.
-    :returns None if the configuration is clean, error message otherwise
-    :rtype str
-    '''
-    def __check_config(self):
+    def __check_config(self) -> Optional[str]:
+        """Perform syntaxic and logic checks of the configuration."""
         with open(self.__get_real_path('schema.json')) as schema:
             try:
-                validate(self.config, json.load(schema))
-            except Exception as valid_err:
-                raise Exception("Invalid configuration: {}".format(valid_err))
+                jsonschema.validate(self.config, json.load(schema))
+                return None
+            except (ValidationError, SchemaError) as schema_err:
+                logging.error('Invalid configuration!')
+                raise schema_err
 
         # Ensure that there is not duplicate hostnames
         # as the name of nodes, which must be unique
@@ -245,11 +244,9 @@ class GraphBot:
         if len(hosts) != len(unique_hosts):
             raise Exception('Two hosts cannot have the same name')
 
-    '''
-    Returns absolute path of a relative_path starting
-    from the current directory
-    '''
-    def __get_real_path(self, relative_path: str):
+    @staticmethod
+    def __get_real_path(relative_path: str) -> str:
+        """Return absolute path of a path starting in the current directory."""
         return os.path.join(
-                        os.path.dirname(os.path.realpath(__file__)),
-                        relative_path)
+            os.path.dirname(os.path.realpath(__file__)),
+            relative_path)
