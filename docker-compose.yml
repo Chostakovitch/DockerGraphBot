@@ -1,22 +1,22 @@
 version: "3.7"
 services:
   graph-bot:
-    image: "chosto/graphbot"
+    image: chosto/graphbot
     init: true
-    container_name: "graph-bot"
+    container_name: graph-bot
     volumes:
       - "./config.json:/config.json"
       - "./certs:/certs"
       - "./output:/output"
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
-      CONFIG_FILE: '/config.json'
-      OUTPUT_DIRECTORY: '/output'
-      CERTS_DIRECTORY: '/certs'
-      #CRON_CONFIG: '* * * * *'
+      CONFIG_FILE: "/config.json"
+      OUTPUT_DIRECTORY: "/output"
+      CERTS_DIRECTORY: "/certs"
+      #CRON_CONFIG: "* * * * *"
     networks:
       - graphbot
-    restart: unless-stopped
+    restart: on-failure
 
 networks:
   graphbot:
