@@ -43,8 +43,8 @@ class GraphBot:
             format='png')
         # Categories of nodes and edges are fixed, we just
         # need to update colors if they are customized
-        with open(self.__get_real_path('legend.template')) as legend:
-            template = legend.read()
+        with open(self.__get_real_path('legend.template')) as legend_template:
+            template = legend_template.read()
             legend.node('legend', template.format(
                 self.config['organization'],
                 self.config['color_scheme'].get('traefik', '#edb591'),
