@@ -188,9 +188,10 @@ class GraphBuilder:
             )
             for cont in containers:
                 # This will indeed create multiple subgraph
-                # for a single image, but they will be merged
-                # in the final representation
-                image_subgraph_name = f'cluster_{self.__node_name(cont.image)}'
+                # for a single image if there is multiple containers
+                # but they will be merged in the final representation
+                node_partial_name = self.__node_name(cont.image, cont.network)
+                image_subgraph_name = f'cluster_{node_partial_name}'
                 image_subgraph = Digraph(image_subgraph_name)
                 image_subgraph.attr(
                     label=cont.image,
@@ -351,7 +352,8 @@ class GraphBuilder:
         As each node must have a unique name, and because the graph generated
         by GraphBuilder could be later a subgraph, this function compute a
         node name given a common non-unique name, the host name, and
-        an optional "subname" in case of record-shaped nodes.
+        an optional "subname" in case of record-shaped nodes or to further
+        desambiguish (e.g. same image name in two different networks)
 
         This is reasonable because a container name must be unique on a host.
 
@@ -468,8 +470,8 @@ class GraphBuilder:
 
                 if len(networks_conf['Networks']) > 1:
                     warn = 'Container %s of host %s belongs to more ' \
-                           'than one network, it won''t be properly ' \
-                           'rendered. We will only consider network %s.'
+                           'than one network, it won\'t be properly ' \
+                           'rendered. Using network %s.'
                     logging.warning(warn,
                                     cont.name,
                                     self.host_name,
