@@ -440,16 +440,16 @@ class GraphBuilder:
                 if cont_info.url is not None:
                     backend_port = cont.labels.get('traefik.port')
                     if backend_port is None:
-                        cont_info.backend_port = backend_port
-                    else:
                         cont_info.backend_port = TRAEFIK_PORT
                         warn = 'Traefik host rule found but no backend port ' \
                                'found for container %s of host %s : ' \
-                               'suppose %s port.'
+                               'assume %s port.'
                         logging.warning(warn,
                                         cont_info.name,
-                                        self.host_label,
+                                        self.host_name,
                                         TRAEFIK_PORT)
+                    else:
+                        cont_info.backend_port = backend_port
 
                 # The graph representation is per-network, so choose
                 # a random network if multiple. However we still
@@ -466,7 +466,7 @@ class GraphBuilder:
                             [link.split(':')[0] for link in links]
                         )
 
-                if len(networks_conf['Networks'].items()) > 1:
+                if len(networks_conf['Networks']) > 1:
                     warn = 'Container %s of host %s belongs to more ' \
                            'than one network, it won''t be properly ' \
                            'rendered. We will only consider network %s.'
