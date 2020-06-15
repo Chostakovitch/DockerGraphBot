@@ -451,6 +451,11 @@ class GraphBuilder:
                                         self.host_label,
                                         TRAEFIK_PORT)
 
+                # The graph representation is per-network, so choose
+                # a random network if multiple. However we still
+                # represent the links between containers, so
+                # iterate through all networks. The last will be
+                # the one choosen.
                 for network_name, params in networks_conf['Networks'].items():
                     cont_info.network = network_name
                     links = params['Links']
@@ -461,15 +466,14 @@ class GraphBuilder:
                             [link.split(':')[0] for link in links]
                         )
 
-                    if len(network_name) > 1:
-                        warn = 'Container %s of host %s belongs to more ' \
-                               'than one network, it won''t be properly ' \
-                               'rendered. We will only consider network %s.'
-                        logging.warning(warn,
-                                        cont.name,
-                                        self.host_name,
-                                        cont_info.network)
-
+                if len(networks_conf['Networks'].items()) > 1:
+                    warn = 'Container %s of host %s belongs to more ' \
+                           'than one network, it won''t be properly ' \
+                           'rendered. We will only consider network %s.'
+                    logging.warning(warn,
+                                    cont.name,
+                                    self.host_name,
+                                    cont_info.network)
                 running_containers.append(cont_info)
 
             # Check if a Traefik container is running
