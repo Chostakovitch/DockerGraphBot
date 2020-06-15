@@ -220,8 +220,8 @@ class GraphBot:
         builder = GraphBuilder(
             docker_client,
             self.config['color_scheme'],
-            host_name,
             host['name'],
+            host_name,
             host.get('exclude', [])
         )
         return builder.graph

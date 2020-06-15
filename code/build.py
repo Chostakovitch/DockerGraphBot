@@ -109,8 +109,8 @@ class GraphBuilder:
     def __init__(self,
                  docker_client: docker.DockerClient,
                  color_scheme: Dict[str, str],
-                 host_label: str,
                  host_name: str,
+                 host_label: str,
                  exclude: List[str] = None):
         """
         Initialize a graph builder.
@@ -419,7 +419,7 @@ class GraphBuilder:
                            'of host %s, choosing image %s.'
                     logging.warning(warn,
                                     cont.name,
-                                    self.host_label,
+                                    self.host_name,
                                     cont_info.image)
 
                 networks_conf = cont.attrs['NetworkSettings']
