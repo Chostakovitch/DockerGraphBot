@@ -212,7 +212,7 @@ class GraphBot:
                 host_name += f'{result.address}'
 
         # Build a nice name, with hostname, public IP and generated date
-        host_name += f') at {datetime.now().strftime("%d/%m/%Y %H:%M")}'
+        host_name += f') at {datetime.now().strftime("%m/%d/%Y %H:%M")}'
 
         # Check if the Docker daemon is accessible with current params
         # If yes, starting graph building process
