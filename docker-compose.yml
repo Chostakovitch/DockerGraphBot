@@ -2,6 +2,7 @@ version: "3.7"
 services:
   graph-bot:
     image: "chosto/graphbot"
+    init: true
     container_name: "graph-bot"
     volumes:
       - "./config.json:/config.json"

@@ -19,12 +19,8 @@ if [ -z "${CRON_CONFIG}" ]; then
   echo "CRON_CONFIG not set, launch only once..."
   "$@"
 else
-  echo "Building environment variables files for cron environment..."
-  echo export PATH=${PATH} >> .env
-  echo export PYTHON_VERSION=${PYTHON_VERSION} >> .env
   echo "Creating crontab with ${CRON_CONFIG} specification..."
-  echo "${CRON_CONFIG} . /code/.env && python $@ >/proc/1/fd/1 2>/proc/1/fd/2" >> crontab.conf
-  crontab crontab.conf
-  echo "Launching cron daemon..."
-  cron -f -L 15
+  echo "${CRON_CONFIG} python $@" > crontab.conf
+  echo "Launching supercronic..."
+  supercronic crontab.conf
 fi
