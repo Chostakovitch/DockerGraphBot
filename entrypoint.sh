@@ -2,7 +2,7 @@
 
 echo export OUTPUT_PATH=${OUTPUT_PATH} >> .env
 
-set -- 'code/dgb.py'
+set -- '/code/dgb.py'
 if [ ! -z "${CONFIG_FILE}" ]; then
   set -- "$@" "--config-file" "${CONFIG_FILE}"
 fi
