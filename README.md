@@ -128,6 +128,19 @@ Examples
 
 Note that `remote_path` is just a relative path to the "home" directory of the WebDAV user or the SFTP user.
 
+### Hide elements
+
+For clarity or privacy, you may want to hide some elements on the graph.
+You can currently hide :
+* URL of containers, when using Traefik (`urls`)
+* Docker volumes (`volumes`)
+* Bind mounts (`binds`)
+
+For example, to hide Docker volumes and bind mounts, use :
+```json
+"hide": ["volumes", "binds"]
+```
+
 ### Color scheme
 
 This is pretty self-explanatory. Just use hexadecimal values to control the look-and-feel of your diagrams.
@@ -229,4 +242,5 @@ Contributions are very welcomed. I am not a developer, so feel free to give feed
 * `dgb.py` contains the entrypoint of DGB
 * `render.py` contains the code needed to put diagrams together and generate images
 * `build.py` contains the code to build diagrams themselves, with DOT python library
+* `docker_info.py` contains the code needed to get informations about running Docker containers
 * `actions.py` is the place to put all post generation hooks

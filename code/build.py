@@ -50,7 +50,8 @@ class GraphBuilder:
                  color_scheme: Dict[str, str],
                  host_name: str,
                  host_label: str,
-                 exclude: List[str] = None):
+                 exclude: List[str] = None,
+                 hide: List[str] = None):
         """
         Initialize a graph builder.
 
@@ -59,16 +60,24 @@ class GraphBuilder:
         :param host_name : name of the host
         :param host_label : label to put on the host graph
         :param exclude : name of containers to exclude of the layout
+        :param hide : elements to hide (volumes, binds and/or urls)
         """
         self.color_scheme = color_scheme
         self.docker_client = docker_client
         self.host_label = host_label
         self.host_name = host_name
         self.exclude = exclude if exclude is not None else []
+
+        # Individual variables for hiding elements
+        hide = hide if hide is not None else []
+        self.__hide_urls = 'urls' in hide
+        self.__hide_volumes = 'volumes' in hide
+        self.__hide_binds = 'binds' in hide
+
         # Name of Traefik container if applicable
-        self.traefik_container = ''
+        self.__traefik_container = ''
         # Source port of Traefik container in mapping with backends
-        self.traefik_source_port = ''
+        self.__traefik_source_port = ''
 
         # Initialize parent graph
         self.__graph = Digraph(
@@ -85,8 +94,8 @@ class GraphBuilder:
         """
         # Get all needed informations about running containers
         docker_info = DockerInfo(self.docker_client)
-        self.traefik_container = docker_info.traefik_container
-        self.traefik_source_port = docker_info.traefik_source_port
+        self.__traefik_container = docker_info.traefik_container
+        self.__traefik_source_port = docker_info.traefik_source_port
         running = docker_info.containers
 
         # Ignore containers excluded in configuration
@@ -150,7 +159,9 @@ class GraphBuilder:
                 # The URL of the container, if managed by Traefik, is
                 # represented by a node rather than by a edge label
                 # to avoid ugly large edge labels
-                if self.traefik_container and cont.url is not None:
+                if (self.__traefik_container and
+                        cont.url is not None and
+                        self.__hide_urls):
                     network_subgraph.node(
                         name=self.__node_name(cont.url),
                         label=cont.url,
@@ -178,20 +189,32 @@ class GraphBuilder:
         :param running Running containers
         """
         for cont in running:
-            if self.traefik_container and cont.url is not None:
-                # Edge from traefik default port to URL node
-                self.__graph.edge(
-                    tail_name=self.__node_name(self.traefik_container,
-                                               self.traefik_source_port),
-                    head_name=self.__node_name(cont.url),
-                    **self.__get_style(GraphElement.TRAEFIK)
-                )
-                # Edge from URL node to target container exposed port
-                self.__graph.edge(
-                    tail_name=self.__node_name(cont.url),
-                    head_name=self.__node_name(cont.name, cont.backend_port),
-                    **self.__get_style(GraphElement.TRAEFIK)
-                )
+            if self.__traefik_container and cont.url is not None:
+                tail_source = self.__node_name(self.__traefik_container,
+                                               self.__traefik_source_port)
+                head_target = self.__node_name(cont.name,
+                                               cont.backend_port)
+                if self.__hide_urls:
+                    # Edge from Traefik default port to container exposed port
+                    self.__graph.edge(
+                        tail_name=tail_source,
+                        head_name=head_target,
+                        **self.__get_style(GraphElement.TRAEFIK)
+                    )
+                # Add URL intermediary node
+                else:
+                    # Edge from Traefik default port to URL node
+                    self.__graph.edge(
+                        tail_name=tail_source,
+                        head_name=self.__node_name(cont.url),
+                        **self.__get_style(GraphElement.TRAEFIK)
+                    )
+                    # Edge from URL node to target container exposed port
+                    self.__graph.edge(
+                        tail_name=self.__node_name(cont.url),
+                        head_name=head_target,
+                        **self.__get_style(GraphElement.TRAEFIK)
+                    )
 
             # Add one edge for each link between containers
             for link in cont.links:

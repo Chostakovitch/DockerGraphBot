@@ -230,7 +230,8 @@ class GraphBot:
             self.config['color_scheme'],
             host['name'],
             host_name,
-            host.get('exclude', [])
+            host.get('exclude', []),
+            host.get('hide', [])
         )
         return builder.graph
 
