@@ -25,6 +25,11 @@ class GraphBot:
     Create a PNG graph for each machine given in the configuration.
 
     Merge all graphs is requested in configuration ("big-picture").
+    You can get the final graph by getting the graph attribute,
+    or by calling the build() method.
+
+    Be careful, the graph is not updated each time you get the property.
+    To update the graph to the current state, call build() again.
     """
 
     @property
@@ -76,7 +81,7 @@ class GraphBot:
         self.__certs_path = certs_path
         self.__generated_files = []
 
-    def build(self):
+    def build(self) -> Digraph:
         """
         Build a Digraph object representing the architecture of all hosts.
 
@@ -115,6 +120,7 @@ class GraphBot:
         graphs = {}
         for host in self.config['hosts']:
             try:
+                logging.info('Building graph for host %s...', host['name'])
                 graphs[host['name']] = self.__build_subgraph(host)
                 logging.info('Graph for %s successfully built', host['name'])
             except docker.errors.APIError as e:
@@ -126,6 +132,8 @@ class GraphBot:
                 logging.exception(e)
         self.__render_graph(graphs)
         self.__post_actions()
+
+        return self.__graph
 
     def __render_graph(self, graphs: Dict[str, Digraph]):
         """Render one or several graphs in PNG format from a list of graphs."""

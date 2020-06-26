@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 """Entrypoint of the CLI of Docker Graph Bot."""
+
 import logging
 import argparse
 

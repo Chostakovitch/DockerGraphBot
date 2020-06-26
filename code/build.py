@@ -1,16 +1,14 @@
 #!/usr/bin/python
 # coding=utf-8
 """Logic to build a graph representing the Docker architecture of host."""
-import logging
 from collections import defaultdict
 from enum import Enum
-from typing import List, Dict, Set, Optional
+from typing import List, Dict
 
 import docker
 from graphviz import Digraph
 
-
-TRAEFIK_PORT = '80/tcp'
+from docker_info import DockerInfo, ContainerInfos
 
 
 class GraphElement(Enum):
@@ -31,65 +29,6 @@ class GraphElement(Enum):
     HOST = 'Host running Docker'
     VOLUME = 'Docker volume'
     BIND_MOUNT = 'Directory mounted in a container'
-
-
-class ContainerInfos:
-    """Represent a Docker container with useful members for GraphBuilder."""
-
-    def __init__(self, name: str):
-        """
-        Create an object with default values, except for name.
-
-        Attributes should be filled after the object creation.
-        :param name Name of the container.
-        """
-        self.name = name
-        self.image = str()
-
-        self.ports: Dict[str, Set[str]]
-        self.ports = defaultdict(set)
-
-        self.network = str()
-
-        self.links: Set[str]
-        self.links = set()
-
-        self.bind_mounts: Set[str]
-        self.bind_mounts = set()
-
-        self.volumes: Dict[str, Set[str]]
-        self.volumes = defaultdict(set)
-
-        self.__backend_port = None
-        self.__url = str()
-
-    @property
-    def backend_port(self) -> Optional[str]:
-        """Return the Traefik backend port of the container."""
-        return self.__backend_port
-
-    @backend_port.setter
-    def backend_port(self, value):
-        """
-        Set the Traefik backend port of the container.
-
-        The value can be with /tcp suffix or not.
-        """
-        if value is not None and '/' not in value:
-            value += '/tcp'
-        self.__backend_port = value
-
-    @property
-    def url(self) -> str:
-        """Return the Traefik URL of the container."""
-        return self.__url
-
-    @url.setter
-    def url(self, value):
-        """Set the URL of the container from the Traefik host label."""
-        if value is not None:
-            value = value.replace('Host:', '')
-        self.__url = value
 
 
 class GraphBuilder:
@@ -126,7 +65,10 @@ class GraphBuilder:
         self.host_label = host_label
         self.host_name = host_name
         self.exclude = exclude if exclude is not None else []
-        self.traefik = None
+        # Name of Traefik container if applicable
+        self.traefik_container = ''
+        # Source port of Traefik container in mapping with backends
+        self.traefik_source_port = ''
 
         # Initialize parent graph
         self.__graph = Digraph(
@@ -141,7 +83,14 @@ class GraphBuilder:
         After running this function, the Digraph object is accessible
         via the __graph property.
         """
-        running = self.__get_containers()
+        # Get all needed informations about running containers
+        docker_info = DockerInfo(self.docker_client)
+        self.traefik_container = docker_info.traefik_container
+        self.traefik_source_port = docker_info.traefik_source_port
+        running = docker_info.containers
+
+        # Ignore containers excluded in configuration
+        running = filter(lambda x: x.name not in self.exclude, running)
 
         # Create a subgraph for the host
         # This is necessary to get a nice colored box for the host
@@ -150,10 +99,6 @@ class GraphBuilder:
                 label=self.host_label,
                 **self.__get_style(GraphElement.HOST)
             )
-            if self.traefik:
-                info = 'Will use port %s as source for mapping between ' \
-                       'Traefik and containers for host %s.'
-                logging.info(info, self.host_name, TRAEFIK_PORT)
             self.__add_containers_by_network(host, running)
             self.__add_edges_between_containers(running)
             self.__add_host_port_mapping(running)
@@ -205,7 +150,7 @@ class GraphBuilder:
                 # The URL of the container, if managed by Traefik, is
                 # represented by a node rather than by a edge label
                 # to avoid ugly large edge labels
-                if self.traefik and cont.url is not None:
+                if self.traefik_container and cont.url is not None:
                     network_subgraph.node(
                         name=self.__node_name(cont.url),
                         label=cont.url,
@@ -233,10 +178,11 @@ class GraphBuilder:
         :param running Running containers
         """
         for cont in running:
-            if self.traefik and cont.url is not None:
+            if self.traefik_container and cont.url is not None:
                 # Edge from traefik default port to URL node
                 self.__graph.edge(
-                    tail_name=self.__node_name(self.traefik, TRAEFIK_PORT),
+                    tail_name=self.__node_name(self.traefik_container,
+                                               self.traefik_source_port),
                     head_name=self.__node_name(cont.url),
                     **self.__get_style(GraphElement.TRAEFIK)
                 )
@@ -396,93 +342,3 @@ class GraphBuilder:
             label = label[:-1]
             label += ' }'
         return label
-
-    # TODO put in a separate class and split
-    def __get_containers(self) -> List[ContainerInfos]:
-        """
-        Get running docker containers on the host.
-
-        Excluse those excluded in configuration.
-        """
-        # Names of all running containers
-        running_containers = []
-
-        # Get all running containers
-        for cont in self.docker_client.containers.list():
-            # Some containers may do not have an image name for various reasons
-            if cont.status == 'running' \
-               and cont.name not in self.exclude \
-               and len(cont.image.tags) > 0:
-                cont_info = ContainerInfos(cont.name)
-                # Use the first image as the main name
-                cont_info.image = cont.image.tags[0]
-                if len(cont.image.tags) > 1:
-                    warn = 'Multiple image tags for container %s ' \
-                           'of host %s, choosing image %s.'
-                    logging.warning(warn,
-                                    cont.name,
-                                    self.host_name,
-                                    cont_info.image)
-
-                networks_conf = cont.attrs['NetworkSettings']
-                # Sometimes several host ports could be mapped on a
-                # single container port : handle this situation
-                for exposed_port, host_port in networks_conf['Ports'].items():
-                    cont_info.ports[exposed_port].update(
-                        [port['HostPort'] for port in host_port]
-                        if host_port is not None
-                        else []
-                    )
-
-                cont_info.url = cont.labels.get('traefik.frontend.rule')
-
-                # If Traefik is routing to this container, but that
-                # no backend port is defined, we assume that the
-                # backend port is the default
-                if cont_info.url is not None:
-                    backend_port = cont.labels.get('traefik.port')
-                    if backend_port is None:
-                        cont_info.backend_port = TRAEFIK_PORT
-                        warn = 'Traefik host rule found but no backend port ' \
-                               'found for container %s of host %s : ' \
-                               'assume %s port.'
-                        logging.warning(warn,
-                                        cont_info.name,
-                                        self.host_name,
-                                        TRAEFIK_PORT)
-                    else:
-                        cont_info.backend_port = backend_port
-
-                # The graph representation is per-network, so choose
-                # a random network if multiple. However we still
-                # represent the links between containers, so
-                # iterate through all networks. The last will be
-                # the one choosen.
-                for network_name, params in networks_conf['Networks'].items():
-                    cont_info.network = network_name
-                    links = params['Links']
-                    if links is not None:
-                        # The part before : is the link name (i.e. the
-                        # container's name, after it's just an alias)
-                        cont_info.links.update(
-                            [link.split(':')[0] for link in links]
-                        )
-
-                if len(networks_conf['Networks']) > 1:
-                    warn = 'Container %s of host %s belongs to more ' \
-                           'than one network, it won\'t be properly ' \
-                           'rendered. Using network %s.'
-                    logging.warning(warn,
-                                    cont.name,
-                                    self.host_name,
-                                    cont_info.network)
-                running_containers.append(cont_info)
-
-            # Check if a Traefik container is running
-            # If so, we will represent backends routing and
-            # port mapping in the graph
-            for image in cont.image.tags:
-                if image.split(':')[0] == 'traefik':
-                    self.traefik = cont.name
-
-        return running_containers
