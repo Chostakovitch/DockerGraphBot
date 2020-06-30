@@ -231,7 +231,7 @@ class GraphBot:
             host['name'],
             host_name,
             host.get('exclude', []),
-            host.get('hide', [])
+            self.config.get('hide', [])
         )
         return builder.graph
 
