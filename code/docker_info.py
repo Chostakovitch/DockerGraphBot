@@ -185,7 +185,6 @@ class DockerInfo:
                 # If so, we will represent backends routing and
                 # port mapping in the graph
                 if cont_info.image.split(':')[0] == 'traefik':
-                    print(cont_info)
                     self.traefik_container = cont_info.name
                     self.traefik_source_port = list(cont_info.ports)[0]
                     info = 'Traefik found, using %s as source port in mapping'

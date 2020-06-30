@@ -94,12 +94,12 @@ class GraphBuilder:
         """
         # Get all needed informations about running containers
         docker_info = DockerInfo(self.docker_client)
+        running = docker_info.containers
         self.__traefik_container = docker_info.traefik_container
         self.__traefik_source_port = docker_info.traefik_source_port
-        running = docker_info.containers
 
         # Ignore containers excluded in configuration
-        running = filter(lambda x: x.name not in self.exclude, running)
+        running = [x for x in running if x.name not in self.exclude]
 
         # Create a subgraph for the host
         # This is necessary to get a nice colored box for the host
@@ -125,7 +125,7 @@ class GraphBuilder:
         representation. This is the consequence of grouping
         by network.
 
-        :param parent Panret graph where networks subgraph
+        :param parent Parent graph to create networks subgraph
         :param running List of running containers
         """
         # Group containers by networks
@@ -161,7 +161,7 @@ class GraphBuilder:
                 # to avoid ugly large edge labels
                 if (self.__traefik_container and
                         cont.url is not None and
-                        self.__hide_urls):
+                        not self.__hide_urls):
                     network_subgraph.node(
                         name=self.__node_name(cont.url),
                         label=cont.url,
