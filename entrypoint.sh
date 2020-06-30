@@ -15,6 +15,10 @@ if [ ! -z "${CERTS_DIRECTORY}" ]; then
   set -- "$@" "--certs-directory" "${CERTS_DIRECTORY}"
 fi
 
+if [ ! -z "${LOG_LEVEL}" ]; then
+  set -- "$@" "--log-level" "${LOG_LEVEL}"
+fi
+
 if [ -z "${CRON_CONFIG}" ]; then
   echo "CRON_CONFIG not set, launch only once..."
   "$@"

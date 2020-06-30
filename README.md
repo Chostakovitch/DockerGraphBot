@@ -178,6 +178,7 @@ Those are the environment variables that you can override at your convenience :
 * *Optional* : `CERTS_DIRECTORY` : mount point of the certificates directory (if you use TLS to connect to a remote Docker instance)
 * *Optional* : `OUTPUT_DIRECTORY` : mount point of the output volume (if you want to keep track of the diagrams)
 * *Optional* : `CRON_CONFIG` : cron setting (*e.g.* `0 0 * * *` for every day at midnight). If you don't provide it, DGB will execute once and stop.
+* *Optional* : `LOG_LEVEL` : `debug`, `info`, `warning` or `error`. Default to `info`.
 
 If you want to use Docker Compose (recommended), use the one provided in this repository and tune the environment variables in the file to match the host mount points :
 
@@ -207,7 +208,7 @@ Just hit :
 ```bash
 $ python3 -m pip install -r requirements.txt
 $ ./code/dgb.py --help
-usage: dgb.py [-h] [-o OUTPUT_DIRECTORY] [-c CONFIG_FILE] [-t CERTS_DIRECTORY]
+usage: dgb.py [-h] [-o OUTPUT_DIRECTORY] [-c CONFIG_FILE] [-t CERTS_DIRECTORY] [-l {debug,info,warning,error}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -217,6 +218,8 @@ optional arguments:
                         path of the configuration file
   -t CERTS_DIRECTORY, --certs-directory CERTS_DIRECTORY
                         path of the directory container certificates
+  -l {debug,info,warning,error}, --log-level {debug,info,warning,error}
+                        verbosity of logging
 ```
 ## Security considerations
 

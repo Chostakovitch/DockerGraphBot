@@ -13,6 +13,7 @@ services:
       CONFIG_FILE: "/config.json"
       OUTPUT_DIRECTORY: "/output"
       CERTS_DIRECTORY: "/certs"
+      LOG_LEVEL: "info"
       #CRON_CONFIG: "* * * * *"
     networks:
       - graphbot
