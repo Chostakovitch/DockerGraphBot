@@ -181,7 +181,7 @@ class GraphBuilder:
                 # to avoid ugly large edge labels
                 if (self.__traefik_container and
                         cont.url is not None):
-                    network_subgraph.node(
+                    image_subgraph.node(
                         name=self.__node_name(cont.url),
                         label='Traefik' if self.__hide_urls else cont.url,
                         **self.__get_style(GraphElement.TRAEFIK)
