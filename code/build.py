@@ -293,7 +293,8 @@ class GraphBuilder:
         """
         for source, dests in volumes.items():
             source_parent.node(
-                name=self.__node_name(source),
+                # Avoid duplicates with container name (dirty)
+                name=self.__node_name(source + source),
                 label=source,
                 **self.__get_style(GraphElement.VOLUME)
             )
@@ -307,12 +308,14 @@ class GraphBuilder:
                 # Edge from container to mount point
                 cont_parent.edge(
                     tail_name=self.__node_name(cont.name),
-                    head_name=self.__node_name(dest + cont.name)
+                    head_name=self.__node_name(dest + cont.name),
+                    **self.__get_style(GraphElement.MOUNT_POINT)
                 )
                 # Edge from mount point to source
                 self.__graph.edge(
                     tail_name=self.__node_name(dest + cont.name),
-                    head_name=self.__node_name(source)
+                    head_name=self.__node_name(source + source),
+                    **self.__get_style(GraphElement.VOLUME)
                 )
 
     def __get_style(self, graph_element: GraphElement) -> Dict[str, str]:
