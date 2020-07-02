@@ -96,7 +96,7 @@ class GraphBot:
             # Merge edges when possible
             'concentrate': 'true',
             # Minimum distance (inches) between node of successive ranks
-            'ranksep': '0.8 equally',
+            'ranksep': '0.3',
             # Allow edges between clusters
             'compound': 'true',
             # Defaut text/border color

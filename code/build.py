@@ -182,7 +182,7 @@ class GraphBuilder:
                 if (self.__traefik_container and
                         cont.url is not None and
                         not self.__hide_urls):
-                    network_subgraph.node(
+                    parent.node(
                         name=self.__node_name(cont.url),
                         label=cont.url,
                         **self.__get_style(GraphElement.TRAEFIK)
