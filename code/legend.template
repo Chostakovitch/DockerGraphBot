@@ -35,7 +35,7 @@
     <TD BORDER="1" WIDTH="100" BGCOLOR="{8}"></TD>
   </TR>
   <TR>
-    <TD ALIGN="LEFT">Bind Mount</TD>
+    <TD ALIGN="LEFT">Mount Point</TD>
     <TD BORDER="1" WIDTH="100" BGCOLOR="{9}"></TD>
   </TR>
 </TABLE>>

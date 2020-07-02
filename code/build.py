@@ -28,7 +28,7 @@ class GraphElement(Enum):
     NETWORK = 'Cluster around containers of the same Docker network'
     HOST = 'Host running Docker'
     VOLUME = 'Docker volume'
-    BIND_MOUNT = 'Directory mounted in a container'
+    MOUNT_POINT = 'Directory mounted in a container'
 
 
 class GraphBuilder:
@@ -109,7 +109,7 @@ class GraphBuilder:
                 **self.__get_style(GraphElement.HOST)
             )
             self.__add_containers_by_network(host, running)
-            self.__add_edges_between_containers(running)
+            self.__add_links_between_containers(running)
             self.__add_host_port_mapping(running)
 
     def __add_containers_by_network(self,
@@ -151,11 +151,20 @@ class GraphBuilder:
                     label=cont.image,
                     **self.__get_style(GraphElement.IMAGE)
                 )
+
+                # Create a simple node for the container
                 image_subgraph.node(
                     name=self.__node_name(cont.name),
                     label=self.__record_label(cont.name, list(cont.ports)),
                     **self.__get_style(GraphElement.CONTAINER)
                 )
+
+                # Add volumes
+                self.__add_volumes_to_container(
+                    cont,
+                    image_subgraph,
+                    parent)
+
                 # The URL of the container, if managed by Traefik, is
                 # represented by a node rather than by a edge label
                 # to avoid ugly large edge labels
@@ -172,9 +181,9 @@ class GraphBuilder:
 
             parent.subgraph(network_subgraph)
 
-    def __add_edges_between_containers(self, running: List[ContainerInfos]):
+    def __add_links_between_containers(self, running: List[ContainerInfos]):
         """
-        Create all the edges between the running containers.
+        Create all the links between the running containers.
 
         This includes :
         - Docker links
@@ -234,6 +243,8 @@ class GraphBuilder:
         this function, as it will properly set labels.
         If you don't call this function, the graph will render
         properly but without explicit labels.
+
+        :param running Running containers
         """
         for cont in running:
             for exposed_port, host_ports in cont.ports.items():
@@ -244,9 +255,71 @@ class GraphBuilder:
                         **self.__get_style(GraphElement.PORT)
                     )
                     self.__graph.edge(
-                        self.__node_name(port),
-                        self.__node_name(cont.name, exposed_port),
+                        tail_name=self.__node_name(port),
+                        head_name=self.__node_name(cont.name, exposed_port),
                         **self.__get_style(GraphElement.PORT)
+                    )
+
+    def __add_volumes_to_container(
+            self,
+            cont: ContainerInfos,
+            cont_parent: Digraph,
+            volume_parent: Digraph):
+        """
+        Add Docker volumes and bind mounts to a specific subgraph.
+
+        Docker volumes are always represented in the main graph.
+        Destination mount points are represented in the parent graph.
+
+        The subgraph should be the container subgraph, but can be any
+        Digraph.
+
+        :param cont Container
+        :param cont_parent Subgraph of container
+        :param volume_parent Subgraph for Docker volume
+        """
+        # Add bind mounts as mout points
+        if not self.__hide_binds:
+            for bind in cont.bind_mounts:
+                cont_parent.node(
+                    # Prevent mount point duplicates, add container name
+                    name=self.__node_name(bind, cont.name),
+                    label=bind,
+                    **self.__get_style(GraphElement.MOUNT_POINT)
+                )
+                # Edge from container to mount point
+                cont_parent.edge(
+                    tail_name=self.__node_name(cont.name),
+                    head_name=self.__node_name(bind, cont.name),
+                    **self.__get_style(GraphElement.MOUNT_POINT)
+                )
+        if not self.__hide_volumes:
+            for volume, dests in cont.volumes.items():
+                # Add volume in the main graph
+                volume_parent.node(
+                    name=self.__node_name(volume),
+                    label=volume,
+                    **self.__get_style(GraphElement.VOLUME)
+                )
+                # Add volume mount points
+                for dest in dests:
+                    cont_parent.node(
+                        # Prevent mount point duplicates, add container name
+                        name=self.__node_name(dest, cont.name),
+                        label=dest,
+                        **self.__get_style(GraphElement.MOUNT_POINT)
+                    )
+                    # Edge from container to mount point
+                    cont_parent.edge(
+                        tail_name=self.__node_name(cont.name),
+                        head_name=self.__node_name(dest, cont.name),
+                        **self.__get_style(GraphElement.MOUNT_POINT)
+                    )
+                    # Edge from mount point to Docker Volume
+                    self.__graph.edge(
+                        tail_name=self.__node_name(dest, cont.name),
+                        head_name=self.__node_name(volume),
+                        **self.__get_style(GraphElement.VOLUME)
                     )
 
     def __get_style(self, graph_element: GraphElement) -> Dict[str, str]:
@@ -304,7 +377,7 @@ class GraphBuilder:
                 'color': self.color_scheme['volume'],
                 'fillcolor': self.color_scheme['volume']
             }
-        elif graph_element == GraphElement.BIND_MOUNT:
+        elif graph_element == GraphElement.MOUNT_POINT:
             style = {
                 'style': 'filled,rounded',
                 'color': self.color_scheme['bind_mount'],

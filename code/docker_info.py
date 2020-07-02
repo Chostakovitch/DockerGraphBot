@@ -181,6 +181,16 @@ class DockerInfo:
                                     cont_info.network)
                 self.__containers.append(cont_info)
 
+                # Get bind mounts and volumes
+                for mount in cont.attrs['Mounts']:
+                    dest = mount['Destination']
+                    if mount['Type'] == 'bind':
+                        cont_info.bind_mounts.add(dest)
+                    elif mount['Type'] == 'volume':
+                        cont_info.volumes[mount['Name']].add(dest)
+                    else:
+                        logging.warning('Unknown volume type : %s', mount)
+
                 # Check if a Traefik container is running
                 # If so, we will represent backends routing and
                 # port mapping in the graph
