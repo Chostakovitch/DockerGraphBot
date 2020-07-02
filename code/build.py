@@ -331,7 +331,7 @@ class GraphBuilder:
         """
         name = f'{name}_{self.host_name}'
         if subname is not None:
-            name += f':{subname}'
+            name += f'.{subname}'
         return name
 
     @staticmethod
