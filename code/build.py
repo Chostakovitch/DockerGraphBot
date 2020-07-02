@@ -283,14 +283,14 @@ class GraphBuilder:
             for bind in cont.bind_mounts:
                 cont_parent.node(
                     # Prevent mount point duplicates, add container name
-                    name=self.__node_name(bind, cont.name),
+                    name=self.__node_name(bind + cont.name),
                     label=bind,
                     **self.__get_style(GraphElement.MOUNT_POINT)
                 )
                 # Edge from container to mount point
                 cont_parent.edge(
                     tail_name=self.__node_name(cont.name),
-                    head_name=self.__node_name(bind, cont.name),
+                    head_name=self.__node_name(bind + cont.name),
                     **self.__get_style(GraphElement.MOUNT_POINT)
                 )
         if not self.__hide_volumes:
@@ -305,19 +305,19 @@ class GraphBuilder:
                 for dest in dests:
                     cont_parent.node(
                         # Prevent mount point duplicates, add container name
-                        name=self.__node_name(dest, cont.name),
+                        name=self.__node_name(dest + cont.name),
                         label=dest,
                         **self.__get_style(GraphElement.MOUNT_POINT)
                     )
                     # Edge from container to mount point
                     cont_parent.edge(
                         tail_name=self.__node_name(cont.name),
-                        head_name=self.__node_name(dest, cont.name),
+                        head_name=self.__node_name(dest + cont.name),
                         **self.__get_style(GraphElement.MOUNT_POINT)
                     )
                     # Edge from mount point to Docker Volume
                     self.__graph.edge(
-                        tail_name=self.__node_name(dest, cont.name),
+                        tail_name=self.__node_name(dest + cont.name),
                         head_name=self.__node_name(volume),
                         **self.__get_style(GraphElement.VOLUME)
                     )
@@ -404,7 +404,7 @@ class GraphBuilder:
         """
         name = f'{name}_{self.host_name}'
         if subname is not None:
-            name += f'.{subname}'
+            name += f':{subname}'
         return name
 
     @staticmethod
