@@ -3,7 +3,7 @@
 """Logic to build a graph representing the Docker architecture of host."""
 from collections import defaultdict
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Set
 
 import docker
 from graphviz import Digraph
@@ -27,7 +27,7 @@ class GraphElement(Enum):
     CONTAINER = 'Concrete instance of an image'
     NETWORK = 'Cluster around containers of the same Docker network'
     HOST = 'Host running Docker'
-    VOLUME = 'Docker volume'
+    VOLUME = 'Docker volume or host folder'
     MOUNT_POINT = 'Directory mounted in a container'
 
 
@@ -160,10 +160,21 @@ class GraphBuilder:
                 )
 
                 # Add volumes
-                self.__add_volumes_to_container(
-                    cont,
-                    image_subgraph,
-                    parent)
+                if not self.__hide_binds:
+                    self.__add_volumes_to_container(
+                        cont,
+                        image_subgraph,
+                        parent,
+                        cont.bind_mounts
+                    )
+
+                if not self.__hide_volumes:
+                    self.__add_volumes_to_container(
+                        cont,
+                        image_subgraph,
+                        parent,
+                        cont.volumes
+                    )
 
                 # The URL of the container, if managed by Traefik, is
                 # represented by a node rather than by a edge label
@@ -264,11 +275,12 @@ class GraphBuilder:
             self,
             cont: ContainerInfos,
             cont_parent: Digraph,
-            volume_parent: Digraph):
+            source_parent: Digraph,
+            volumes: Dict[str, Set[str]]):
         """
-        Add Docker volumes and bind mounts to a specific subgraph.
+        Add volumes to a specific subgraph.
 
-        Docker volumes are always represented in the main graph.
+        Sources are always represented in the main graph.
         Destination mount points are represented in the parent graph.
 
         The subgraph should be the container subgraph, but can be any
@@ -276,51 +288,32 @@ class GraphBuilder:
 
         :param cont Container
         :param cont_parent Subgraph of container
-        :param volume_parent Subgraph for Docker volume
+        :param source_parent Subgraph for Docker volumes and host folders
+        :param volumes Source folder or Docker volumes and mount points
         """
-        # Add bind mounts as mout points
-        if not self.__hide_binds:
-            for bind in cont.bind_mounts:
+        for source, dests in volumes.items():
+            source_parent.node(
+                name=self.__node_name(source),
+                label=source,
+                **self.__get_style(GraphElement.VOLUME)
+            )
+            for dest in dests:
                 cont_parent.node(
                     # Prevent mount point duplicates, add container name
-                    name=self.__node_name(bind + cont.name),
-                    label=bind,
+                    name=self.__node_name(dest + cont.name),
+                    label=dest,
                     **self.__get_style(GraphElement.MOUNT_POINT)
                 )
                 # Edge from container to mount point
                 cont_parent.edge(
                     tail_name=self.__node_name(cont.name),
-                    head_name=self.__node_name(bind + cont.name),
-                    **self.__get_style(GraphElement.MOUNT_POINT)
+                    head_name=self.__node_name(dest + cont.name)
                 )
-        if not self.__hide_volumes:
-            for volume, dests in cont.volumes.items():
-                # Add volume in the main graph
-                volume_parent.node(
-                    name=self.__node_name(volume),
-                    label=volume,
-                    **self.__get_style(GraphElement.VOLUME)
+                # Edge from mount point to source
+                self.__graph.edge(
+                    tail_name=self.__node_name(dest + cont.name),
+                    head_name=self.__node_name(source)
                 )
-                # Add volume mount points
-                for dest in dests:
-                    cont_parent.node(
-                        # Prevent mount point duplicates, add container name
-                        name=self.__node_name(dest + cont.name),
-                        label=dest,
-                        **self.__get_style(GraphElement.MOUNT_POINT)
-                    )
-                    # Edge from container to mount point
-                    cont_parent.edge(
-                        tail_name=self.__node_name(cont.name),
-                        head_name=self.__node_name(dest + cont.name),
-                        **self.__get_style(GraphElement.MOUNT_POINT)
-                    )
-                    # Edge from mount point to Docker Volume
-                    self.__graph.edge(
-                        tail_name=self.__node_name(dest + cont.name),
-                        head_name=self.__node_name(volume),
-                        **self.__get_style(GraphElement.VOLUME)
-                    )
 
     def __get_style(self, graph_element: GraphElement) -> Dict[str, str]:
         """

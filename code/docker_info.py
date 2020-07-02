@@ -40,9 +40,11 @@ class ContainerInfos:
         self.links: Set[str]
         self.links = set()
 
-        self.bind_mounts: Set[str]
-        self.bind_mounts = set()
+        # Host folder and mount points
+        self.bind_mounts: Dict[str, Set[str]]
+        self.bind_mounts = defaultdict(set)
 
+        # Docker volume and mount points
         self.volumes: Dict[str, Set[str]]
         self.volumes = defaultdict(set)
 
@@ -185,7 +187,7 @@ class DockerInfo:
                 for mount in cont.attrs['Mounts']:
                     dest = mount['Destination']
                     if mount['Type'] == 'bind':
-                        cont_info.bind_mounts.add(dest)
+                        cont_info.bind_mounts[mount['Source']].add(dest)
                     elif mount['Type'] == 'volume':
                         cont_info.volumes[mount['Name']].add(dest)
                     else:

@@ -31,7 +31,7 @@
     <TD BORDER="1" WIDTH="100" BGCOLOR="{7}"></TD>
   </TR>
   <TR>
-    <TD ALIGN="LEFT">Docker Volume</TD>
+    <TD ALIGN="LEFT">Docker Volume or host folder</TD>
     <TD BORDER="1" WIDTH="100" BGCOLOR="{8}"></TD>
   </TR>
   <TR>

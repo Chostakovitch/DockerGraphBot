@@ -134,7 +134,7 @@ For clarity or privacy, you may want to hide some elements on the graph.
 You can currently hide :
 * URL of containers, when using Traefik (`urls`)
 * Docker volumes (`volumes`)
-* Bind mounts (`binds`)
+* Bind mounts (`binds`) - this is especially if you want to hide host folder paths.
 
 For example, to hide Docker volumes and bind mounts, use :
 ```json
