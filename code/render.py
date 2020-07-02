@@ -93,12 +93,9 @@ class GraphBot:
         graph_attr = {
             # Draw straight lines
             'splines': 'false',
-            # Merge edges when possible
-            'concentrate': 'true',
             # Minimum distance (inches) between node of successive ranks
             'ranksep': '0.3',
-            # Allow edges between clusters
-            'compound': 'true',
+            'nodesep': '0.1',
             # Defaut text/border color
             'fontcolor': font_color
         }

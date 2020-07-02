@@ -128,6 +128,8 @@ class GraphBuilder:
         :param parent Parent graph to create networks subgraph
         :param running List of running containers
         """
+        # Create a virtual subgraph for volume sources
+        volume_source = Digraph(graph_attr={'rank': 'same'})
         # Group containers by networks
         network_dict = defaultdict(list)
         for cont in running:
@@ -164,7 +166,7 @@ class GraphBuilder:
                     self.__add_volumes_to_container(
                         cont,
                         image_subgraph,
-                        parent,
+                        volume_source,
                         cont.bind_mounts
                     )
 
@@ -172,7 +174,7 @@ class GraphBuilder:
                     self.__add_volumes_to_container(
                         cont,
                         image_subgraph,
-                        parent,
+                        volume_source,
                         cont.volumes
                     )
 
@@ -190,6 +192,8 @@ class GraphBuilder:
                 network_subgraph.subgraph(image_subgraph)
 
             parent.subgraph(network_subgraph)
+
+        parent.subgraph(volume_source)
 
     def __add_links_between_containers(self, running: List[ContainerInfos]):
         """
@@ -287,11 +291,11 @@ class GraphBuilder:
                     head_name=self.__node_name(dest + cont.name),
                     **self.__get_style(GraphElement.MOUNT_POINT)
                 )
-                # Edge from mount point to source
+                # Edge from source to mount point
                 self.__graph.edge(
                     tail_name=self.__node_name(dest + cont.name),
                     head_name=self.__node_name(source + source),
-                    **self.__get_style(GraphElement.VOLUME)
+                    **self.__get_style(GraphElement.VOLUME),
                 )
 
     def __get_style(self, graph_element: GraphElement) -> Dict[str, str]:
