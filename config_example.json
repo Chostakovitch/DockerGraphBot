@@ -28,7 +28,7 @@
     "network": "#ffffff",
     "volume": "#819cd9",
     "bind_mount": "#b19cd9",
-    "host": "#e1efe6",
+    "host": "#c7ceea",
     "dark_text": "#32384f",
     "bright_text": "#ffffff"
   },
