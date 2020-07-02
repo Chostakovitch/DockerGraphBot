@@ -180,11 +180,10 @@ class GraphBuilder:
                 # represented by a node rather than by a edge label
                 # to avoid ugly large edge labels
                 if (self.__traefik_container and
-                        cont.url is not None and
-                        not self.__hide_urls):
-                    parent.node(
+                        cont.url is not None):
+                    network_subgraph.node(
                         name=self.__node_name(cont.url),
-                        label=cont.url,
+                        label='Traefik' if self.__hide_urls else cont.url,
                         **self.__get_style(GraphElement.TRAEFIK)
                     )
 
@@ -196,10 +195,6 @@ class GraphBuilder:
         """
         Create all the links between the running containers.
 
-        This includes :
-        - Docker links
-        - Traefik proxying (port mapping and backend routing)
-
         It is preferable to call __add_containers_by_network before using
         this function, as it will properly set labels.
         If you don't call this function, the graph will render
@@ -210,31 +205,12 @@ class GraphBuilder:
         """
         for cont in running:
             if self.__traefik_container and cont.url is not None:
-                tail_source = self.__node_name(self.__traefik_container,
-                                               self.__traefik_source_port)
-                head_target = self.__node_name(cont.name,
-                                               cont.backend_port)
-                if self.__hide_urls:
-                    # Edge from Traefik default port to container exposed port
-                    self.__graph.edge(
-                        tail_name=tail_source,
-                        head_name=head_target,
-                        **self.__get_style(GraphElement.TRAEFIK)
-                    )
-                # Add URL intermediary node
-                else:
-                    # Edge from Traefik default port to URL node
-                    self.__graph.edge(
-                        tail_name=tail_source,
-                        head_name=self.__node_name(cont.url),
-                        **self.__get_style(GraphElement.TRAEFIK)
-                    )
-                    # Edge from URL node to target container exposed port
-                    self.__graph.edge(
-                        tail_name=self.__node_name(cont.url),
-                        head_name=head_target,
-                        **self.__get_style(GraphElement.TRAEFIK)
-                    )
+                # Edge from URL node to target container exposed port
+                self.__graph.edge(
+                    tail_name=self.__node_name(cont.url),
+                    head_name=self.__node_name(cont.name, cont.backend_port),
+                    **self.__get_style(GraphElement.TRAEFIK)
+                )
 
             # Add one edge for each link between containers
             for link in cont.links:
