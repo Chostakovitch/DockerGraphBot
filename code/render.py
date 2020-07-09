@@ -96,6 +96,10 @@ class GraphBot:
             # Minimum distance (inches) between node of successive ranks
             'ranksep': '0.3',
             'nodesep': '0.1',
+            # Merge edges if possible
+            'concentrate': 'true',
+            # Enforce de-crossing edges bewteen clusters
+            'remincross': 'true',
             # Defaut text/border color
             'fontcolor': font_color
         }
