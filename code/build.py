@@ -138,14 +138,15 @@ class GraphBuilder:
         # Group containers by networks
         network_dict = defaultdict(list)
         for cont in running:
-            networks = [n for n in cont.networks if n != self.default_network]
-            if len(networks) < len(cont.networks):
+            if self.default_network in cont.networks \
+                    and len(cont.networks) > 1:
+                cont.networks.remove(self.default_network)
                 warn = 'Container %s belongs to more than one network, ' \
                        'including default network %s : ignore it. '
                 logging.warning(warn, cont.name, self.default_network)
 
-            network = networks[0]
-            if len(networks) > 1:
+            network = list(cont.networks)[0]
+            if len(cont.networks) > 1:
                 warn = 'Container %s belongs to multiple networks, choose %s.'
                 logging.warning(warn, cont.name, network)
             network_dict[network].append(cont)
