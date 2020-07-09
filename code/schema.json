@@ -28,6 +28,7 @@
             "type": "array",
             "items": { "type": "string" }
           },
+          "default_network": { "type": "string" },
           "tls_config": {
             "type": "object",
             "properties": {

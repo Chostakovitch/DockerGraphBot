@@ -232,7 +232,8 @@ class GraphBot:
             host['name'],
             host_name,
             host.get('exclude', []),
-            self.config.get('hide', [])
+            self.config.get('hide', []),
+            host.get('default_network', None)
         )
         return builder.graph
 

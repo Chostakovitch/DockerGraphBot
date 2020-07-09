@@ -5,6 +5,8 @@ from collections import defaultdict
 from enum import Enum
 from typing import List, Dict, Set
 
+import logging
+
 import docker
 from graphviz import Digraph
 
@@ -51,7 +53,8 @@ class GraphBuilder:
                  host_name: str,
                  host_label: str,
                  exclude: List[str] = None,
-                 hide: List[str] = None):
+                 hide: List[str] = None,
+                 default_network: str = None):
         """
         Initialize a graph builder.
 
@@ -61,12 +64,14 @@ class GraphBuilder:
         :param host_label : label to put on the host graph
         :param exclude : name of containers to exclude of the layout
         :param hide : elements to hide (volumes, binds and/or urls)
+        :param default_network : network with lower priority if multiple
         """
         self.color_scheme = color_scheme
         self.docker_client = docker_client
         self.host_label = host_label
         self.host_name = host_name
         self.exclude = exclude if exclude is not None else []
+        self.default_network = default_network
 
         # Individual variables for hiding elements
         hide = hide if hide is not None else []
@@ -133,7 +138,17 @@ class GraphBuilder:
         # Group containers by networks
         network_dict = defaultdict(list)
         for cont in running:
-            network_dict[cont.network].append(cont)
+            networks = [n for n in cont.networks if n != self.default_network]
+            if len(networks) < len(cont.networks):
+                warn = 'Container %s belongs to more than one network, ' \
+                       'including default network %s : ignore it. '
+                logging.warning(warn, cont.name, self.default_network)
+
+            network = networks[0]
+            if len(networks) > 1:
+                warn = 'Container %s belongs to multiple networks, choose %s.'
+                logging.warning(warn, cont.name, network)
+            network_dict[network].append(cont)
 
         # Create a subgraph for each network
         for network, containers in network_dict.items():
@@ -146,7 +161,7 @@ class GraphBuilder:
                 # This will indeed create multiple subgraph
                 # for a single image if there is multiple containers
                 # but they will be merged in the final representation
-                node_partial_name = self.__node_name(cont.image, cont.network)
+                node_partial_name = self.__node_name(cont.image, network)
                 image_subgraph_name = f'cluster_{node_partial_name}'
                 image_subgraph = Digraph(image_subgraph_name)
                 image_subgraph.attr(
@@ -289,13 +304,13 @@ class GraphBuilder:
                 cont_parent.edge(
                     tail_name=self.__node_name(cont.name),
                     head_name=self.__node_name(dest + cont.name),
-                    **self.__get_style(GraphElement.MOUNT_POINT)
+                    color=self.color_scheme['bind_mount']
                 )
                 # Edge from source to mount point
                 self.__graph.edge(
                     tail_name=self.__node_name(dest + cont.name),
                     head_name=self.__node_name(source + source),
-                    **self.__get_style(GraphElement.VOLUME),
+                    color=self.color_scheme['volume'],
                 )
 
     def __get_style(self, graph_element: GraphElement) -> Dict[str, str]:

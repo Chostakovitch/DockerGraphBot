@@ -66,7 +66,10 @@ You can specify multiple hosts, for example if your infrastructure is made of se
 In either case :
 * `name` field is used for labels and file naming
 * `url` is the URL of the host, either local or public
-* `exclude` is a list of container **names** that you may want to exclude from the diagram
+* `exclude` is an *optional* array of container **names** that you may want to exclude from the diagram
+* `default_network` is an *optional* default network that you use for your containers, which will have a lower priority when a container is in multiple networks.
+
+In fact, `default_network` is mainly used with reverse proxies. If you have a reverse proxy, a service and its database, you will probably have the reverse proxy and the service in a network, then the service and its database in another network. In this case, the service will be represented **in the database network**, because the `default_network` has a lower priority.
 
 If you want to build a diagram for a remote host, the Docker socket must be reachable through the network. TLS is mandatory here because this is basic security. See [the official documentation](https://docs.docker.com/engine/security/https/) to learn how to expose your Docker socket.
 
@@ -236,7 +239,11 @@ Also, when you use remote host, you also give a `root` access to these hosts to 
 
 If you run a lot of containers across multiple hosts, the final diagrams may be unreadable. Indeed, GraphViz is not made to manage vertically aligned clusters and the final diagram will be too wide. If so, you may want to set `merge` to `false` and generate a single diagram per host.
 
-Also, as the graph is distributed per-network, if a host belongs to more than one network, it will be rendered on a single network only.
+Also, as the graph is distributed per-network, if a host belongs to more than one network, it will be rendered on a single network only. The choosed network in undeterministic, unless :
+* The container belongs to two networks
+* You set `default_network` and one of those networks matches
+
+In this case, the container will be rendered in the other network.
 
 ## Contributing
 

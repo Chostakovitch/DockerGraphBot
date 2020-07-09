@@ -35,7 +35,8 @@ class ContainerInfos:
         self.ports: Dict[str, Set[str]]
         self.ports = defaultdict(set)
 
-        self.network = str()
+        self.networks: Set[str]
+        self.networks = set()
 
         self.links: Set[str]
         self.links = set()
@@ -159,13 +160,9 @@ class DockerInfo:
                     else:
                         cont_info.backend_port = backend_port
 
-                # The graph representation is per-network, so choose
-                # a random network if multiple. However we still
-                # represent the links between containers, so
-                # iterate through all networks. The last will be
-                # the one choosen.
+                # Add networks and links
                 for network_name, params in networks_conf['Networks'].items():
-                    cont_info.network = network_name
+                    cont_info.networks.add(network_name)
                     links = params['Links']
                     if links is not None:
                         # The part before : is the link name (i.e. the
@@ -173,15 +170,6 @@ class DockerInfo:
                         cont_info.links.update(
                             [link.split(':')[0] for link in links]
                         )
-
-                if len(networks_conf['Networks']) > 1:
-                    warn = 'Container %s belongs to more ' \
-                           'than one network, using network ' \
-                           '%s as main network.'
-                    logging.warning(warn,
-                                    cont.name,
-                                    cont_info.network)
-                self.__containers.append(cont_info)
 
                 # Get bind mounts and volumes
                 for mount in cont.attrs['Mounts']:
@@ -202,4 +190,5 @@ class DockerInfo:
                     info = 'Traefik found, using %s as source port in mapping'
                     logging.info(info, self.traefik_source_port)
 
+                self.__containers.append(cont_info)
         return self.__containers
