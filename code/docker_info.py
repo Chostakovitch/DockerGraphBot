@@ -77,7 +77,12 @@ class ContainerInfos:
     def url(self, value):
         """Set the URL of the container from the Traefik host label."""
         if value is not None:
+            suffix = ''
+            # For routing specific URLs, not only hosts, to containers
+            if 'Path:' in value:
+                suffix = value.split('Path:', 1)[1]
             value = value.replace('Host:', '')
+            value += suffix
         self.__url = value
 
 
