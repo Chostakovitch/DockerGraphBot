@@ -80,7 +80,7 @@ class ContainerInfos:
             suffix = ''
             # For routing specific URLs, not only hosts, to containers
             if 'Path:' in value:
-                suffix = value.split('Path:', 1)[1]
+                value, suffix = value.split(';Path:', 1)
             value = value.replace('Host:', '')
             value += suffix
         self.__url = value

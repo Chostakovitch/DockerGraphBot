@@ -289,7 +289,7 @@ class GraphBuilder:
         """
         for source, dests in volumes.items():
             # Cut name if too long
-            label = source[:15] + '...' if len(source) > 15 else source
+            label = source[:20] + '...' if len(source) > 20 else source
             source_parent.node(
                 # Avoid duplicates with container name (dirty)
                 name=self.__node_name(source + source),
