@@ -288,10 +288,12 @@ class GraphBuilder:
         :param volumes Source folder or Docker volumes and mount points
         """
         for source, dests in volumes.items():
+            # Cut name if too long
+            label = source[:15] + '...' if len(source) > 15 else source
             source_parent.node(
                 # Avoid duplicates with container name (dirty)
                 name=self.__node_name(source + source),
-                label=source,
+                label=label,
                 **self.__get_style(GraphElement.VOLUME)
             )
             for dest in dests:
@@ -311,7 +313,7 @@ class GraphBuilder:
                 self.__graph.edge(
                     tail_name=self.__node_name(dest + cont.name),
                     head_name=self.__node_name(source + source),
-                    color=self.color_scheme['volume'],
+                    color=self.color_scheme['bind_mount'],
                 )
 
     def __get_style(self, graph_element: GraphElement) -> Dict[str, str]:

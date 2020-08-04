@@ -65,7 +65,6 @@ class SFTPUploader:
 
     Currently only connection via user/password is supported.
     """
-
     def __init__(self,
                  hostname: str,
                  port: int,
