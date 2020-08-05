@@ -40,7 +40,7 @@ Roughly, DGB follows these steps :
 
 No private information should be leaked on the final diagrams. See below for an example diagram generated from one of the [Picasoft](https://picasoft.net) virtual machines.
 
-![Example of generated diagram](https://gitlab.utc.fr/picasoft/projets/graph-bot/raw/master/img/example_pica02.png)
+![Example of generated diagram](https://gitlab.utc.fr/picasoft/projets/graph-bot/raw/master/img/example_pica01.png)
 
 ## Configuration
 
@@ -61,6 +61,8 @@ Example :
 ```
 ### Hosts
 
+#### General purpose
+
 You can specify multiple hosts, for example if your infrastructure is made of several hosts.
 
 In either case :
@@ -71,13 +73,18 @@ In either case :
 
 In fact, `default_network` is mainly used with reverse proxies. If you have a reverse proxy, a service and its database, you will probably have the reverse proxy and the service in a network, then the service and its database in another network. In this case, the service will be represented **in the database network**, because the `default_network` has a lower priority.
 
+#### Remote Docker host
+
 If you want to build a diagram for a remote host, the Docker socket must be reachable through the network. TLS is mandatory here because this is basic security. See [the official documentation](https://docs.docker.com/engine/security/https/) to learn how to expose your Docker socket.
 
 Once you have your CA, server and client key, just fill the `ca_cert`, `cert` and `key` field with paths **relative** to your `CERTS_DIRECTORY` folder (see [Usage](#usage)). Don't forget to specify the Docker socket port.
 
 The main advantage to use multiple hosts is that it reduces the burden of maintaining an instance of DGB on each host. With only one instance, you can build, generate and upload all your diagrams at once.
 
-Example with a remote host and a local host :
+#### Example
+
+With a remote host and a local host :
+
 ```json
 "hosts": [
   {
@@ -129,7 +136,7 @@ Examples
 ]
 ```
 
-Note that `remote_path` is just a relative path to the "home" directory of the WebDAV user or the SFTP user.
+Note that `remote_path` is just a relative path to the `home` (`~`) directory of the WebDAV user or the SFTP user.
 
 ### Hide elements
 
@@ -171,9 +178,9 @@ $ docker build -t chosto/graph-bot .
 Then, create required directories :
 
 ```bash
-$ # These are the bind-mounted directories. If you change their names, change bind-mounts !.
-$ mkdir config output
-$ mv config_example.json config/config.json
+$ # Bind mounted directory. You can use a Docker Volume instead.
+$ mkdir output
+$ mv config_example.json config.json
 ```
 
 Those are the environment variables that you can override at your convenience :
@@ -198,7 +205,7 @@ $ docker network create graphbot
 $ docker run -d --name graph-bot \
 	--volume "$(pwd)/config.json:/config.json" --volume "$(pwd)/output:/output" --volume "/var/run/docker.sock:/var/run/docker.sock"
 	--volume "$(pwd)/certs:/certs"
-	-e CONFIG_FILE='/config.json' -e OUTPUT_DIRECTORY='/output' -e CERTS_DIRECTORY='/certs' -e CRON_CONFIG='0 0 * * *'
+	-e CONFIG_FILE='/config.json' -e OUTPUT_DIRECTORY='/output' -e CERTS_DIRECTORY='/certs' -e CRON_CONFIG='0 0 * * *' -e LOV_LEVEL='info'
 	--restart unless-stopped --net graphbot graph-bot
 ```
 
@@ -226,13 +233,14 @@ optional arguments:
 ```
 ## Security considerations
 
-DGB is launched as `root`, especially because private keys will probably we own by `root` on the host with permissions `600` (and they **should be**).
+DGB is launched as `root`, especially because private keys will probably be owned by `root` on the host with permissions `600` (and they **should be**).
 
 Also, the Docker socket is mounted inside the container so that DGB can query the running containers. Mounting the Docker socket is equivalent to :
 * Allowing any modification of all containers, images, volumes...
 * Giving a `root` access **to the host** itself ! (with little tricks)
 
 As a consequence, it is mandatory to keep DGB in an isolated Docker network, without exposed port (I cannot see a reason to do so).
+
 Also, when you use remote host, you also give a `root` access to these hosts to DGB. You must ensure that each person than can access your DGB instance (*i.e.* in `docker` group on the host running DGB) has a `root` or equivalent access on all hosts, otherwise you expose yourself to privilege escalation.
 
 ## Limitations
