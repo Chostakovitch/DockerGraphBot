@@ -175,6 +175,7 @@ class DockerInfo:
                                 cont_info.backend_port = value
                             else:
                                 cont_info.backend_port = TRAEFIK_DEFAULT_PORT
+                            if cont_info.backend_port is None:
                                 warn = 'Traefik host rule found but no backend port ' \
                                        'found for container %s : assume %s port.'
                                 logging.warning(warn,
