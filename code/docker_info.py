@@ -10,6 +10,7 @@ Theses informations are wrapped into a simplified object, ContainerInfos.
 """
 
 import logging
+import re
 
 from collections import defaultdict
 from typing import Set, List, Dict, Optional
@@ -148,20 +149,37 @@ class DockerInfo:
                         else []
                     )
 
+                # Try Traefik v1
                 cont_info.url = cont.labels.get('traefik.frontend.rule')
+
+                if cont_info.url is None:
+                    # Try Traefik v2
+                    p = re.compile('traefik.http.routers.*.rule')
+                    for label, value in cont.labels.items():
+                        if p.match(label):
+                            urls = re.search('Host\(`(.*?)`\)', value)
+                            if urls:
+                                cont_info.url = urls.group(1)
 
                 # If Traefik is routing to this container, but that
                 # no backend port is defined, we assume that the
                 # backend port is the default
                 if cont_info.url is not None:
+                    # Try Traefik v1
                     backend_port = cont.labels.get('traefik.port')
                     if backend_port is None:
-                        cont_info.backend_port = TRAEFIK_DEFAULT_PORT
-                        warn = 'Traefik host rule found but no backend port ' \
-                               'found for container %s : assume %s port.'
-                        logging.warning(warn,
-                                        cont_info.name,
-                                        TRAEFIK_DEFAULT_PORT)
+                        # Try Traefik v2
+                        p = re.compile('traefik.http.services*.loadbalancer.server.port')
+                        for label, value in cont.labels.items():
+                            if p.match(label):
+                                cont_info.backend_port = value
+                            else:
+                                cont_info.backend_port = TRAEFIK_DEFAULT_PORT
+                                warn = 'Traefik host rule found but no backend port ' \
+                                       'found for container %s : assume %s port.'
+                                logging.warning(warn,
+                                                cont_info.name,
+                                                TRAEFIK_DEFAULT_PORT)
                     else:
                         cont_info.backend_port = backend_port
 
