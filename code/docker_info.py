@@ -169,7 +169,7 @@ class DockerInfo:
                     backend_port = cont.labels.get('traefik.port')
                     if backend_port is None:
                         # Try Traefik v2
-                        p = re.compile('traefik.http.services*.loadbalancer.server.port')
+                        p = re.compile('traefik.http.services.*.loadbalancer.server.port')
                         for label, value in cont.labels.items():
                             if p.match(label):
                                 cont_info.backend_port = value
