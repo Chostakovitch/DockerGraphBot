@@ -177,6 +177,17 @@ class GraphBuilder:
                     **self.__get_style(GraphElement.CONTAINER)
                 )
 
+                # Add host ports : guaranteed to be unique as no port can be bound twice.
+                # Adding the host port to this subgraph gives a better layout by avoiding
+                # very long edges from the outside.
+                for exposed_port, host_ports in cont.ports.items():
+                    for port in host_ports:
+                        image_subgraph.node(
+                            self.__node_name(port),
+                            port,
+                            **self.__get_style(GraphElement.PORT)
+                        )
+
                 # Add volumes
                 if not self.__hide_binds:
                     self.__add_volumes_to_container(
@@ -256,11 +267,6 @@ class GraphBuilder:
         for cont in running:
             for exposed_port, host_ports in cont.ports.items():
                 for port in host_ports:
-                    self.__graph.node(
-                        self.__node_name(port),
-                        port,
-                        **self.__get_style(GraphElement.PORT)
-                    )
                     self.__graph.edge(
                         tail_name=self.__node_name(port),
                         head_name=self.__node_name(cont.name, exposed_port),
